@@ -59,16 +59,29 @@ open class AuthViewModel : ViewModel() {
         auth?.createUserWithEmailAndPassword(email, password)
             ?.addOnCompleteListener{task->
                 if (task.isSuccessful){
-                    uploadProfilePicture()
-                    saveUserData(
-                        username = username,
-                        email = email,
-                        name = name,
-                        surname = surname,
-                        phoneNumber = phoneNumber,
-                        onSuccess = onSuccess,
-                        onFailure = onFailure
-                    )
+                    auth?.currentUser!!.sendEmailVerification()
+                        .addOnCompleteListener { verificationTask ->
+                            if (verificationTask.isSuccessful) {
+                                uploadProfilePicture()
+                                saveUserData(
+                                    username = username,
+                                    email = email,
+                                    name = name,
+                                    surname = surname,
+                                    phoneNumber = phoneNumber,
+                                    onSuccess = {
+                                        signOut()
+                                        onSuccess()
+                                    },
+                                    onFailure = {
+                                        onFailure()
+                                    }
+                                )
+                            } else {
+                                _authState.value = AuthState.Error(verificationTask.exception?.message ?: "Failed to send verification email")
+                            }
+                        }
+
                 }else{
                     _authState.value = AuthState.Error(task.exception?.message?:"Something went wrong")
                 }
@@ -111,11 +124,17 @@ open class AuthViewModel : ViewModel() {
 
     private fun loginWithEmailAndPassword(email: String, password: String) {
         auth?.signInWithEmailAndPassword(email,password)
-            ?.addOnCompleteListener{task->
-                if (task.isSuccessful){
-                    _authState.value = AuthState.Authenticated
-                }else{
-                    _authState.value = AuthState.Error(task.exception?.message?:"Something went wrong")
+            ?.addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    val currentUser = auth?.currentUser
+                    if (currentUser?.isEmailVerified == true) {
+                        _authState.value = AuthState.Authenticated
+                    } else {
+                        signOut()
+                        _authState.value = AuthState.Error("Please verify your email before logging in.")
+                    }
+                } else {
+                    _authState.value = AuthState.Error(task.exception?.message ?: "Something went wrong")
                 }
             }
     }
@@ -139,6 +158,38 @@ open class AuthViewModel : ViewModel() {
     fun signOut() {
         auth?.signOut()
         _authState.value = AuthState.Unauthenticated
+    }
+
+    suspend fun forgotPassword(identifier: String, onSuccess: () -> Unit, onFailure: () -> Unit) {
+        if (identifier.isEmpty()) {
+            _authState.value = AuthState.Error("Identifier cannot be empty")
+            return
+        }
+
+        _authState.value = AuthState.Loading
+
+        when {
+            isEmail(identifier) -> sendPasswordResetEmail(identifier, onSuccess, onFailure)
+            else -> {
+                val email = getEmailForUsername(identifier)
+                if (email.isNotEmpty()) {
+                    sendPasswordResetEmail(email, onSuccess, onFailure)
+                } else {
+                    _authState.value = AuthState.Error("No account found with that username")
+                }
+            }
+        }
+    }
+
+    private fun sendPasswordResetEmail(email: String, onSuccess: () -> Unit, onFailure: () -> Unit) {
+        auth?.sendPasswordResetEmail(email)
+            ?.addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    onSuccess()
+                } else {
+                    onFailure()
+                }
+            }
     }
 
     companion object {

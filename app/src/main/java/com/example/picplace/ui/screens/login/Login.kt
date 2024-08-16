@@ -104,7 +104,7 @@ fun LoginScreen(modifier: Modifier, navController: NavController, authViewModel:
             onFocusChange = {
                 isUsernameFocused = it
             },
-            type = KeyboardType.Text,
+            type = KeyboardType.Email,
             imageVector = Icons.Outlined.Person
         )
 

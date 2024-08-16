@@ -221,7 +221,13 @@ fun RegisterScreen(modifier: Modifier, navController: NavController, authViewMod
                     surname = surname,
                     phoneNumber = phoneNumber,
                     onSuccess = {
-                        Toast.makeText(context, "Success register", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Success register, please verify your email", Toast.LENGTH_LONG).show()
+                        username = ""
+                        password = ""
+                        mail = ""
+                        name = ""
+                        surname = ""
+                        phoneNumber = ""
                     },
                     onFailure = {
                         Toast.makeText(context, "Register failed", Toast.LENGTH_SHORT).show()
