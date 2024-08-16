@@ -1,4 +1,4 @@
-package com.example.picplace.ui.screens.login
+package com.example.picplace.ui.screens.register
 
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
@@ -11,20 +11,22 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Phone
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,34 +44,65 @@ import com.example.picplace.R
 import com.example.picplace.models.auth.AuthState
 import com.example.picplace.models.auth.AuthViewModel
 import com.example.picplace.models.auth.MockAuthViewModel
-import com.example.picplace.ui.theme.PicPlaceTheme
 import com.example.picplace.ui.components.CustomTextField
 import com.example.picplace.ui.components.PasswordTextField
 import com.example.picplace.ui.navigation.Screens
-import kotlinx.coroutines.launch
+import com.example.picplace.ui.theme.PicPlaceTheme
 
 @Composable
-fun LoginScreen(modifier: Modifier, navController: NavController, authViewModel: AuthViewModel) {
+fun RegisterScreen(modifier: Modifier, navController: NavController, authViewModel: AuthViewModel) {
     var username by remember {
         mutableStateOf("")
     }
     var password by remember {
         mutableStateOf("")
     }
-    val focusManager = LocalFocusManager.current
-    val context = LocalContext.current
-    var isUsernameFocused by remember { mutableStateOf(false) }
-    var isPasswordFocused by remember { mutableStateOf(false) }
+    var name by remember {
+        mutableStateOf("")
+    }
+    var surname by remember {
+        mutableStateOf("")
+    }
+    var phoneNumber by remember {
+        mutableStateOf("")
+    }
+    var mail by remember {
+        mutableStateOf("")
+    }
 
+    val context = LocalContext.current
+    val focusManager = LocalFocusManager.current
+
+    var isUsernameFocused by remember {
+        mutableStateOf(false)
+    }
+    var isPasswordFocused by remember {
+        mutableStateOf(false)
+    }
+    var isNameFocused by remember {
+        mutableStateOf(false)
+    }
+    var isSurnameFocused by remember {
+        mutableStateOf(false)
+    }
+    var isPhoneNumberFocused by  remember {
+        mutableStateOf(false)
+    }
+    var isMailFocused by remember {
+        mutableStateOf(false)
+    }
+
+    val scrollState = rememberScrollState()
     val authState = authViewModel.authState.observeAsState()
 
-    val coroutineScope = rememberCoroutineScope()
-
     LaunchedEffect(authState.value) {
-        when(authState.value){
+        when (authState.value) {
             is AuthState.Authenticated -> navController.navigate(Screens.Home.screen)
-            is AuthState.Error -> Toast.makeText(context,
-                (authState.value as AuthState.Error).message, Toast.LENGTH_SHORT).show()
+            is AuthState.Error -> Toast.makeText(
+                context,
+                (authState.value as AuthState.Error).message, Toast.LENGTH_SHORT
+            ).show()
+
             else -> Unit
         }
     }
@@ -80,6 +113,7 @@ fun LoginScreen(modifier: Modifier, navController: NavController, authViewModel:
             .pointerInput(Unit) {
                 detectTapGestures(onTap = { focusManager.clearFocus() })
             }
+            .verticalScroll(scrollState)
     ) {
 
         Spacer(modifier = modifier.weight(0.7f))
@@ -99,13 +133,27 @@ fun LoginScreen(modifier: Modifier, navController: NavController, authViewModel:
             onValueChange = {
                 username = it
             },
-            label = "E-mail/Username",
+            label = "Username",
             isFocused = isUsernameFocused,
-            onFocusChange = {
+            onFocusChange =  {
                 isUsernameFocused = it
             },
             type = KeyboardType.Text,
             imageVector = Icons.Outlined.Person
+        )
+
+        CustomTextField(
+            value = mail,
+            onValueChange = {
+                mail = it
+            },
+            label = "E-mail",
+            isFocused = isMailFocused,
+            onFocusChange =  {
+                isMailFocused = it
+            },
+            type = KeyboardType.Email,
+            imageVector = Icons.Outlined.Email
         )
 
         PasswordTextField(
@@ -120,14 +168,65 @@ fun LoginScreen(modifier: Modifier, navController: NavController, authViewModel:
             }
         )
 
+        CustomTextField(
+            value = name,
+            onValueChange = {
+                name = it
+            },
+            label = "Name",
+            isFocused = isNameFocused,
+            onFocusChange =  {
+                isNameFocused = it
+            },
+            type = KeyboardType.Text,
+            imageVector = Icons.Outlined.Person
+        )
+
+        CustomTextField(
+            value = surname,
+            onValueChange = {
+                surname = it
+            },
+            label = "Surname",
+            isFocused = isSurnameFocused,
+            onFocusChange =  {
+                isSurnameFocused = it
+            },
+            type = KeyboardType.Text,
+            imageVector = Icons.Outlined.Person
+        )
+
+        CustomTextField(
+            value = phoneNumber,
+            onValueChange = {
+                phoneNumber = it
+            },
+            label = "Phone number",
+            isFocused = isPhoneNumberFocused,
+            onFocusChange =  {
+                isPhoneNumberFocused = it
+            },
+            type = KeyboardType.Phone,
+            imageVector = Icons.Outlined.Phone
+        )
+
+
         Button(
             onClick = {
-                coroutineScope.launch{
-                    authViewModel.login(
-                       username = username,
-                        password = password
-                    )
-                }
+                authViewModel.register(
+                    username = username,
+                    password = password,
+                    email = mail,
+                    name = name,
+                    surname = surname,
+                    phoneNumber = phoneNumber,
+                    onSuccess = {
+                        Toast.makeText(context, "Success register", Toast.LENGTH_SHORT).show()
+                    },
+                    onFailure = {
+                        Toast.makeText(context, "Register failed", Toast.LENGTH_SHORT).show()
+                    }
+                )
             },
             modifier = modifier
                 .fillMaxWidth()
@@ -138,30 +237,16 @@ fun LoginScreen(modifier: Modifier, navController: NavController, authViewModel:
             enabled = authState.value != AuthState.Loading
         ) {
             Text(
-                text = "Login",
+                text = "Register",
                 color = Color.White,
             )
-        }
-
-        TextButton(
-            onClick = {
-                navController.navigate(Screens.ForgotPassword.screen)
-                      },
-            modifier = modifier
-                .align(Alignment.End)
-                .padding(horizontal = 10.dp),
-        ){
-            Text(
-                text = "Forgotten Password?",
-                color = Color(0xFF425980),
-                )
         }
 
         Spacer(modifier = modifier.weight(1f))
 
         OutlinedButton(
             onClick = {
-                navController.navigate(Screens.Register.screen)
+                navController.popBackStack()
             },
             modifier = modifier
                 .fillMaxWidth()
@@ -169,7 +254,7 @@ fun LoginScreen(modifier: Modifier, navController: NavController, authViewModel:
             border = BorderStroke(2.dp, Color(0xFF425980))
         ) {
             Text(
-                text = "Create new account",
+                text = "Already have an account?",
                 color = Color(0xFF425980)
             )
         }
@@ -177,16 +262,15 @@ fun LoginScreen(modifier: Modifier, navController: NavController, authViewModel:
 
 }
 
-
 @Preview(
     showBackground = true,
     backgroundColor = 2
 )
 @Composable
-fun LoginPreview() {
+fun RegisterPreview() {
     AuthViewModel.isPreviewMode = true
     PicPlaceTheme {
-        LoginScreen(
+        RegisterScreen(
             modifier = Modifier,
             navController = NavController(LocalContext.current),
             authViewModel = MockAuthViewModel()
