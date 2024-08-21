@@ -1,5 +1,6 @@
 package com.example.picplace.models.auth
 
+import android.net.Uri
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 
@@ -14,8 +15,15 @@ class MockAuthViewModel : AuthViewModel() {
         get() = _mockAuthState
 
     override fun register(
-        username: String, password: String, email: String, name: String, surname: String, phoneNumber: String,
-        onSuccess: () -> Unit, onFailure: () -> Unit
+        username: String,
+        password: String,
+        email: String,
+        name: String,
+        surname: String,
+        phoneNumber: String,
+        photoUri: Uri,
+        onSuccess: () -> Unit,
+        onFailure: () -> Unit
     ) {
         _mockAuthState.value = AuthState.Authenticated
         onSuccess()

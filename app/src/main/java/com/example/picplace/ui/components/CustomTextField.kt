@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 
@@ -29,7 +30,10 @@ fun CustomTextField(
     onFocusChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
     type: KeyboardType = KeyboardType.Text,
-    imageVector: ImageVector
+    capitalization: KeyboardCapitalization = KeyboardCapitalization.None,
+    imageVector: ImageVector,
+    borderColor: Color = Color(0xFF425980),
+    supportingText: String = ""
 ) {
     TextField(
         value = value,
@@ -41,7 +45,7 @@ fun CustomTextField(
             .border(
                 BorderStroke(
                     2.dp,
-                    if (isFocused) Color(0xFF425980) else Color.Transparent
+                    if (isFocused || borderColor == Color.Red) borderColor else Color.Transparent
                 ),
                 shape = RoundedCornerShape(13.dp)
             )
@@ -54,7 +58,8 @@ fun CustomTextField(
             unfocusedIndicatorColor = Color.Transparent
         ),
         keyboardOptions = KeyboardOptions(
-            keyboardType = type
+            keyboardType = type,
+            capitalization = capitalization
         ),
         leadingIcon = {
             Icon(
@@ -63,4 +68,12 @@ fun CustomTextField(
             )
         }
     )
+
+    if (supportingText.isNotEmpty()) {
+        Text(
+            text = "*$supportingText",
+            color = borderColor,
+            modifier = Modifier.padding(vertical = 4.dp, horizontal =  15.dp)
+        )
+    }
 }

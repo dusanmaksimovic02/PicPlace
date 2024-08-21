@@ -35,7 +35,9 @@ fun PasswordTextField(
     label: String,
     isFocused: Boolean,
     onFocusChange: (Boolean) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    borderColor: Color = Color(0xFF425980),
+    supportingText: String = ""
 ) {
     val passwordVisible = remember {
         mutableStateOf(false)
@@ -51,7 +53,7 @@ fun PasswordTextField(
             .border(
                 BorderStroke(
                     2.dp,
-                    if (isFocused) Color(0xFF425980) else Color.Transparent
+                    if (isFocused || borderColor == Color.Red) borderColor else Color.Transparent
                 ),
                 shape = RoundedCornerShape(13.dp)
             )
@@ -91,4 +93,12 @@ fun PasswordTextField(
             }
         }
     )
+
+    if (supportingText.isNotEmpty()) {
+        Text(
+            text = "*$supportingText",
+            color = borderColor,
+            modifier = Modifier.padding(vertical = 4.dp, horizontal =  15.dp)
+        )
+    }
 }

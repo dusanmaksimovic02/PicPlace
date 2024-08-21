@@ -1,11 +1,13 @@
 package com.example.picplace.models.auth
 
+import android.net.Uri
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.firestore
+import com.google.firebase.storage.storage
 import kotlinx.coroutines.tasks.await
 
 open class AuthViewModel : ViewModel() {
@@ -54,7 +56,7 @@ open class AuthViewModel : ViewModel() {
 
     }
 
-    open fun register(username: String, password: String, email: String, name: String, surname: String, phoneNumber: String, onSuccess: () -> Unit, onFailure : () -> Unit) {
+    open fun register(username: String, password: String, email: String, name: String, surname: String, phoneNumber: String, photoUri: Uri, onSuccess: () -> Unit, onFailure : () -> Unit) {
         _authState.value = AuthState.Loading
         auth?.createUserWithEmailAndPassword(email, password)
             ?.addOnCompleteListener{task->
@@ -62,33 +64,37 @@ open class AuthViewModel : ViewModel() {
                     auth?.currentUser!!.sendEmailVerification()
                         .addOnCompleteListener { verificationTask ->
                             if (verificationTask.isSuccessful) {
-                                uploadProfilePicture()
-                                saveUserData(
-                                    username = username,
-                                    email = email,
-                                    name = name,
-                                    surname = surname,
-                                    phoneNumber = phoneNumber,
-                                    onSuccess = {
-                                        signOut()
-                                        onSuccess()
-                                    },
-                                    onFailure = {
-                                        onFailure()
-                                    }
-                                )
+                                uploadProfilePicture(photoUri, onSuccess = { imageUrl ->
+                                    saveUserData(
+                                        username = username,
+                                        email = email,
+                                        name = name,
+                                        surname = surname,
+                                        phoneNumber = phoneNumber,
+                                        imageUrl = imageUrl,
+                                        onSuccess = {
+                                            signOut()
+                                            onSuccess()
+                                        },
+                                        onFailure = {
+                                            onFailure()
+                                        }
+                                    )
+                                }, onFailure = {
+                                    _authState.value = AuthState.Error("Failed to upload profile picture")
+                                    onFailure()
+                                })
                             } else {
                                 _authState.value = AuthState.Error(verificationTask.exception?.message ?: "Failed to send verification email")
                             }
                         }
-
                 }else{
                     _authState.value = AuthState.Error(task.exception?.message?:"Something went wrong")
                 }
             }
     }
 
-    private fun saveUserData(username: String, email: String, name: String, surname: String, phoneNumber: String, onSuccess: () -> Unit, onFailure : () -> Unit) {
+    private fun saveUserData(username: String, email: String, name: String, surname: String, phoneNumber: String, imageUrl: String, onSuccess: () -> Unit, onFailure : () -> Unit) {
         val currentUser = auth?.currentUser
         if (currentUser == null) {
             _authState.value = AuthState.Unauthenticated
@@ -101,7 +107,8 @@ open class AuthViewModel : ViewModel() {
             username,
             name,
             surname,
-            phoneNumber
+            phoneNumber,
+            imageUrl
         )
 
         Firebase.firestore.collection("users")
@@ -118,9 +125,31 @@ open class AuthViewModel : ViewModel() {
             }
     }
 
-    private fun uploadProfilePicture() {
+    private fun uploadProfilePicture(photoUri: Uri, onSuccess: (String) -> Unit, onFailure: () -> Unit) {
+        val currentUser = auth?.currentUser
+        if (currentUser == null) {
+            _authState.value = AuthState.Unauthenticated
+            onFailure()
+            return
+        }
 
+        val storageRef = Firebase.storage.reference.child("profile_pictures/${currentUser.uid}.jpg")
+
+        storageRef.putFile(photoUri)
+            .addOnSuccessListener {
+                storageRef.downloadUrl.addOnSuccessListener { uri ->
+                    onSuccess(uri.toString())
+                }.addOnFailureListener {
+                    _authState.value = AuthState.Error("Failed to get download URL")
+                    onFailure()
+                }
+            }
+            .addOnFailureListener {
+                _authState.value = AuthState.Error("Failed to upload profile picture")
+                onFailure()
+            }
     }
+
 
     private fun loginWithEmailAndPassword(email: String, password: String) {
         auth?.signInWithEmailAndPassword(email,password)
@@ -189,6 +218,59 @@ open class AuthViewModel : ViewModel() {
                 } else {
                     onFailure()
                 }
+            }
+    }
+
+    fun checkUsernameAvailability(username: String, onResult: (Boolean) -> Unit) {
+        if (username.isEmpty()) {
+            _authState.value = AuthState.Error("Username cannot be empty")
+            onResult(false)
+            return
+        }
+
+        Firebase.firestore.collection("users")
+            .whereEqualTo("username", username)
+            .get()
+            .addOnSuccessListener { documents ->
+                if (documents.isEmpty) {
+                    onResult(true)
+                } else {
+                    onResult(false)
+                }
+            }
+            .addOnFailureListener { exception ->
+                _authState.value = AuthState.Error(exception.message ?: "Error checking username")
+                onResult(false)
+            }
+    }
+
+    fun checkEmailAvailability(email: String, onResult: (Boolean) -> Unit) {
+        if (email.isEmpty()) {
+            _authState.value = AuthState.Error("Email cannot be empty")
+            onResult(false)
+            return
+        }
+
+        if (!isEmail(email)) {
+            _authState.value = AuthState.Error("Invalid email format")
+            onResult(false)
+            return
+        }
+
+        Firebase.firestore.collection("users")
+            .whereEqualTo("email", email)
+            .get()
+            .addOnSuccessListener { documents ->
+                if (documents.isEmpty) {
+                    onResult(true)
+                } else {
+                    _authState.value = AuthState.Error("Email already in use")
+                    onResult(false)
+                }
+            }
+            .addOnFailureListener { exception ->
+                _authState.value = AuthState.Error(exception.message ?: "Error checking email")
+                onResult(false)
             }
     }
 

@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">PicPlace</string>
+    <string name="fileprovider">com.example.picplace.ui.screens.register.components.fileprovider</string>
 </resources>
