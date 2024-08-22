@@ -8,13 +8,9 @@ import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
-import androidx.navigation.NavController
 import com.example.picplace.models.auth.AuthViewModel
 import com.example.picplace.ui.navigation.Navigation
-import com.example.picplace.ui.screens.login.LoginScreen
 import com.example.picplace.ui.theme.PicPlaceTheme
 
 class MainActivity : ComponentActivity() {
