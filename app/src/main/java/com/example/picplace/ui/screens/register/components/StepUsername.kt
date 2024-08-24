@@ -19,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,6 +39,7 @@ import com.example.picplace.models.auth.MockAuthViewModel
 import com.example.picplace.models.registration.RegistrationViewModel
 import com.example.picplace.ui.components.CustomTextField
 import com.example.picplace.ui.theme.PicPlaceTheme
+import kotlinx.coroutines.launch
 
 @Composable
 fun StepUsername(
@@ -57,7 +59,7 @@ fun StepUsername(
         mutableStateOf(Color(0xFF425980))
     }
     val focusManager = LocalFocusManager.current
-
+    val coroutineScope = rememberCoroutineScope()
 
     Column(
         modifier = Modifier
@@ -89,15 +91,17 @@ fun StepUsername(
                     borderColor = Color.Red
                     supportingText = "Username can't be empty"
                 } else {
-                    authViewModel.checkUsernameAvailability(registrationViewModel.username.value) { isAvailable ->
-                        if (isAvailable) {
-                            registrationViewModel.username.isValid = true
-                            borderColor = Color(0xFF425980)
-                            supportingText = ""
-                        } else {
-                            registrationViewModel.username.isValid = false
-                            borderColor = Color.Red
-                            supportingText = "Username is already taken"
+                    coroutineScope.launch {
+                        authViewModel.checkUsernameAvailability(registrationViewModel.username.value) { isAvailable ->
+                            if (isAvailable) {
+                                registrationViewModel.username.isValid = true
+                                borderColor = Color(0xFF425980)
+                                supportingText = ""
+                            } else {
+                                registrationViewModel.username.isValid = false
+                                borderColor = Color.Red
+                                supportingText = "Username is already taken"
+                            }
                         }
                     }
                 }

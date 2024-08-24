@@ -19,6 +19,8 @@ import com.example.picplace.models.registration.RegistrationViewModel
 import com.example.picplace.ui.navigation.Screens
 import com.example.picplace.ui.theme.PicPlaceTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.picplace.models.user.MockUserViewModel
+import com.example.picplace.models.user.UserViewModel
 import com.example.picplace.ui.screens.register.components.StepEmail
 import com.example.picplace.ui.screens.register.components.StepName
 import com.example.picplace.ui.screens.register.components.StepPassword
@@ -32,7 +34,8 @@ fun RegisterScreen(
     modifier: Modifier,
     navController: NavController,
     authViewModel: AuthViewModel,
-    registrationViewModel: RegistrationViewModel = viewModel()
+    registrationViewModel: RegistrationViewModel = viewModel(),
+    userViewModel: UserViewModel
 ) {
     val context = LocalContext.current
     val authState = authViewModel.authState.observeAsState()
@@ -105,7 +108,8 @@ fun RegisterScreen(
             onBackStep = onBackStep,
             modifier = modifier,
             registrationViewModel = registrationViewModel,
-            navController = navController
+            navController = navController,
+            userViewModel = userViewModel
         )
     }
 }
@@ -122,7 +126,8 @@ fun RegisterPreview() {
         RegisterScreen(
             modifier = Modifier,
             navController = NavController(LocalContext.current),
-            authViewModel = MockAuthViewModel()
+            authViewModel = MockAuthViewModel(),
+            userViewModel = MockUserViewModel()
         )
     }
 }

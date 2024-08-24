@@ -1,4 +1,4 @@
-package com.example.picplace.ui.screens.forgotpassword
+package com.example.picplace.ui.screens.login.forgotpassword
 
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke

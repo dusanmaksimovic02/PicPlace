@@ -42,6 +42,8 @@ import com.example.picplace.R
 import com.example.picplace.models.auth.AuthState
 import com.example.picplace.models.auth.AuthViewModel
 import com.example.picplace.models.auth.MockAuthViewModel
+import com.example.picplace.models.user.MockUserViewModel
+import com.example.picplace.models.user.UserViewModel
 import com.example.picplace.ui.theme.PicPlaceTheme
 import com.example.picplace.ui.components.CustomTextField
 import com.example.picplace.ui.components.PasswordTextField
@@ -49,7 +51,12 @@ import com.example.picplace.ui.navigation.Screens
 import kotlinx.coroutines.launch
 
 @Composable
-fun LoginScreen(modifier: Modifier, navController: NavController, authViewModel: AuthViewModel) {
+fun LoginScreen(
+    modifier: Modifier,
+    navController: NavController,
+    authViewModel: AuthViewModel,
+    userViewModel: UserViewModel
+) {
     var username by remember {
         mutableStateOf("")
     }
@@ -125,7 +132,8 @@ fun LoginScreen(modifier: Modifier, navController: NavController, authViewModel:
                 coroutineScope.launch{
                     authViewModel.login(
                        username = username,
-                        password = password
+                        password = password,
+                        userViewModel = userViewModel
                     )
                 }
             },
@@ -189,7 +197,8 @@ fun LoginPreview() {
         LoginScreen(
             modifier = Modifier,
             navController = NavController(LocalContext.current),
-            authViewModel = MockAuthViewModel()
+            authViewModel = MockAuthViewModel(),
+            userViewModel = MockUserViewModel()
         )
     }
 }

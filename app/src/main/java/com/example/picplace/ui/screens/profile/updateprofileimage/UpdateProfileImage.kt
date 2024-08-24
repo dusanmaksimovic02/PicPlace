@@ -1,26 +1,32 @@
-package com.example.picplace.ui.screens.register.components
+package com.example.picplace.ui.screens.profile.updateprofileimage
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,49 +34,40 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
-import com.example.picplace.models.auth.AuthState
-import com.example.picplace.models.auth.AuthViewModel
-import com.example.picplace.models.auth.MockAuthViewModel
-import com.example.picplace.models.registration.RegistrationViewModel
-import com.example.picplace.ui.navigation.Screens
-import com.example.picplace.ui.theme.PicPlaceTheme
-import android.Manifest
-import android.content.pm.PackageManager
-import android.net.Uri
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.size
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import com.example.picplace.R
+import com.example.picplace.models.auth.AuthViewModel
 import com.example.picplace.models.user.MockUserViewModel
 import com.example.picplace.models.user.UserViewModel
+import com.example.picplace.ui.screens.register.components.MyModalBottomSheet
+import com.example.picplace.ui.theme.PicPlaceTheme
 import kotlinx.coroutines.launch
 import java.io.File
 
 @Composable
-fun StepProfilePicture(
-    onBackStep: () -> Unit,
-    authViewModel: AuthViewModel,
+fun UpdateProfileImage(
     navController: NavController,
     modifier: Modifier,
-    registrationViewModel: RegistrationViewModel,
     userViewModel: UserViewModel
 ) {
     val focusManager = LocalFocusManager.current
     val context = LocalContext.current
-    val authState = authViewModel.authState.observeAsState()
     val coroutineScope = rememberCoroutineScope()
 
     val tempUri = remember {
         mutableStateOf<Uri?>(null)
+    }
+
+    var newProfileImage by remember {
+        mutableStateOf(Uri.EMPTY)
     }
 
     fun getTempUri(): Uri? {
@@ -98,7 +95,7 @@ fun StepProfilePicture(
         onResult = {
             it?.let {
                 it.let { uri ->
-                    registrationViewModel.photoUri = uri
+                    newProfileImage = uri
                 }
             }
         }
@@ -109,7 +106,7 @@ fun StepProfilePicture(
         onResult = {isSaved ->
             if (isSaved) {
                 tempUri.value?.let { uri ->
-                    registrationViewModel.photoUri = uri
+                    newProfileImage = uri
                 }
             } else {
                 Toast.makeText(context, "Failed to save photo", Toast.LENGTH_SHORT).show()
@@ -157,96 +154,87 @@ fun StepProfilePicture(
         )
     }
 
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .pointerInput(Unit) {
-                detectTapGestures(onTap = { focusManager.clearFocus() })
-            }
-            .padding(10.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-
-        OutlinedButton(
-            onClick = { showBottomSheet = true },
-            modifier = modifier
-                .fillMaxWidth()
+    Scaffold { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(Unit) {
+                    detectTapGestures(onTap = { focusManager.clearFocus() })
+                }
+                .padding(innerPadding),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
+
             Text(
-                text = "Upload/Take photo"
+                text = "Change profile picture",
+                color = Color(0xFF425980),
+                fontWeight = FontWeight.Bold,
+                fontSize = 30.sp,
             )
-        }
 
-        registrationViewModel.photoUri?.let {
-            Box(
-                modifier = modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center
-            ) {
-                AsyncImage(
-                    model = it,
-                    modifier = modifier.size(
-                        200.dp
-                    ),
-                    contentDescription = "photo",
-                )
-            }
-        }
+            Spacer(modifier = modifier.weight(1f))
 
-        Row(
-            modifier = modifier.align(Alignment.CenterHorizontally)
-        ) {
-            Button(
-                onClick = onBackStep
+            OutlinedButton(
+                onClick = { showBottomSheet = true },
+                modifier = modifier
+                    .fillMaxWidth()
+                    .padding(10.dp),
+                border = BorderStroke(2.dp, Color(0xFF425980)),
+                shape = RoundedCornerShape(13.dp)
             ) {
                 Text(
-                    text = "Back"
+                    text = "Upload/Take new profile photo",
+                    color = Color(0xFF425980)
                 )
             }
-        }
 
-        Button(
-            onClick = {
-                coroutineScope.launch {
-                    authViewModel.register(
-                        username = registrationViewModel.username.value,
-                        password = registrationViewModel.password.value,
-                        email = registrationViewModel.email.value,
-                        name = registrationViewModel.name,
-                        surname = registrationViewModel.surname,
-                        phoneNumber = registrationViewModel.phoneNumber,
-                        photoUri = registrationViewModel.photoUri!!,
-                        onSuccess = {
-                            Toast.makeText(
-                                context,
-                                "Success register, please verify your email",
-                                Toast.LENGTH_LONG
-                            ).show()
-                            navController.navigate(Screens.Home.screen)
-                        },
-                        onFailure = {
-                            Toast.makeText(
-                                context,
-                                "Register failed",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        },
-                        userViewModel = userViewModel
+            newProfileImage?.let {
+                Box(
+                    modifier = modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    AsyncImage(
+                        model = it,
+                        modifier = modifier.size(
+                            200.dp
+                        ),
+                        contentDescription = "photo",
                     )
                 }
-            },
-            modifier = modifier
-                .fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF425980)
-            ),
-            enabled = registrationViewModel.photoUri != null && authState.value != AuthState.Loading
-        ) {
-            Text(
-                text = "Register",
-                color = Color.White,
-            )
+            }
+
+            Spacer(modifier = modifier.weight(1f))
+
+            OutlinedButton(
+                onClick = {
+                    coroutineScope.launch {
+                        userViewModel.changeProfilePicture(
+                            newPictureUri = newProfileImage,
+                            onSuccess = {
+                                Toast.makeText(context, "Profile picture updated successfully", Toast.LENGTH_LONG).show()
+                                userViewModel.onLogin()
+                                navController.popBackStack()
+                            },
+                            onFailure = { e ->
+                                Toast.makeText(context, "Error while updating profile picture", Toast.LENGTH_LONG).show()
+                                Log.e("Error while updating profile picture", e.message.toString())
+                            }
+                        )
+                    }
+                },
+                modifier = modifier
+                    .fillMaxWidth()
+                    .padding(10.dp),
+                border = BorderStroke(2.dp, Color(0xFF425980)),
+                shape = RoundedCornerShape(13.dp),
+                enabled = newProfileImage != Uri.EMPTY
+            ) {
+                Text(
+                    text = "Update profile picture",
+                    color = Color(0xFF425980)
+                )
+            }
         }
     }
 }
@@ -256,15 +244,12 @@ fun StepProfilePicture(
     backgroundColor = 2
 )
 @Composable
-fun PreviewStepProfilePicture() {
+fun PreviewUpdateImage() {
     AuthViewModel.isPreviewMode = true
     PicPlaceTheme {
-        StepProfilePicture(
-            onBackStep = {},
-            authViewModel = MockAuthViewModel(),
+        UpdateProfileImage(
             modifier = Modifier,
             navController = rememberNavController(),
-            registrationViewModel = RegistrationViewModel(),
             userViewModel = MockUserViewModel()
         )
     }

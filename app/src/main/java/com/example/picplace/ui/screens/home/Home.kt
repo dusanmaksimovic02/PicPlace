@@ -12,6 +12,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.livedata.observeAsState
@@ -28,13 +29,20 @@ import com.example.picplace.R
 import com.example.picplace.models.auth.AuthState
 import com.example.picplace.models.auth.AuthViewModel
 import com.example.picplace.models.auth.MockAuthViewModel
+import com.example.picplace.models.user.MockUserViewModel
+import com.example.picplace.models.user.UserViewModel
 import com.example.picplace.ui.navigation.BottomNavigationBar
 import com.example.picplace.ui.navigation.Screens
 import com.example.picplace.ui.theme.PicPlaceTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(modifier: Modifier = Modifier, navController: NavController, authViewModel: AuthViewModel) {
+fun HomeScreen(
+    modifier: Modifier = Modifier,
+    navController: NavController,
+    authViewModel: AuthViewModel,
+    userViewModel: UserViewModel
+) {
     val authState = authViewModel.authState.observeAsState()
 
     LaunchedEffect(authState.value) {
@@ -60,7 +68,7 @@ fun HomeScreen(modifier: Modifier = Modifier, navController: NavController, auth
                     )
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
+                    containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(3.dp)
                 )
             )
         },
@@ -80,20 +88,9 @@ fun HomeScreen(modifier: Modifier = Modifier, navController: NavController, auth
             Text(
                 text = "Welcome to PicPlace, your go-to app for discovering the best photo spots in the city!",
                 color = Color(0xFF425980),
-                modifier = Modifier.padding(horizontal = 10.dp),
+                modifier = Modifier.padding(10.dp),
                 fontSize = 23.sp,
             )
-
-            Button(
-                onClick = {
-                    authViewModel.signOut()
-                },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF425980)
-                )
-            ) {
-                Text(text = "Sign out")
-            }
         }
     }
 }
@@ -109,7 +106,8 @@ fun HomePreview() {
         HomeScreen(
             modifier = Modifier,
             navController = NavController(LocalContext.current),
-            authViewModel = MockAuthViewModel()
+            authViewModel = MockAuthViewModel(),
+            userViewModel = MockUserViewModel()
         )
     }
 }

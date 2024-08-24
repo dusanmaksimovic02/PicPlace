@@ -8,4 +8,7 @@ sealed class Screens(val screen: String) {
     data object Leaderboard: Screens("leaderboard")
     data object Map: Screens("map")
     data object Profile: Screens("profile")
+    data object EditUser: Screens("editUser")
+    data object UpdateProfileImage: Screens("updateProfilePicture")
+    data object FullImageScreen: Screens("fullImageScreen")
 }

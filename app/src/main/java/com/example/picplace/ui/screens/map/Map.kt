@@ -19,12 +19,19 @@ import androidx.navigation.NavController
 import com.example.picplace.models.auth.AuthState
 import com.example.picplace.models.auth.AuthViewModel
 import com.example.picplace.models.auth.MockAuthViewModel
+import com.example.picplace.models.user.MockUserViewModel
+import com.example.picplace.models.user.UserViewModel
 import com.example.picplace.ui.navigation.BottomNavigationBar
 import com.example.picplace.ui.navigation.Screens
 import com.example.picplace.ui.theme.PicPlaceTheme
 
 @Composable
-fun MapScreen(modifier: Modifier, navController: NavController, authViewModel: AuthViewModel) {
+fun MapScreen(
+    modifier: Modifier,
+    navController: NavController,
+    authViewModel: AuthViewModel,
+    userViewModel: UserViewModel
+) {
     val authState = authViewModel.authState.observeAsState()
 
     LaunchedEffect(authState.value) {
@@ -68,7 +75,8 @@ fun MapPreview() {
         MapScreen(
             modifier = Modifier,
             navController = NavController(LocalContext.current),
-            authViewModel = MockAuthViewModel()
+            authViewModel = MockAuthViewModel(),
+            userViewModel = MockUserViewModel()
         )
     }
 }

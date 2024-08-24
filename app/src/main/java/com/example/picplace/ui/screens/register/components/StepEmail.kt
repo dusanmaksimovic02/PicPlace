@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,6 +30,7 @@ import com.example.picplace.models.auth.MockAuthViewModel
 import com.example.picplace.models.registration.RegistrationViewModel
 import com.example.picplace.ui.components.CustomTextField
 import com.example.picplace.ui.theme.PicPlaceTheme
+import kotlinx.coroutines.launch
 
 @Composable
 fun StepEmail(
@@ -49,6 +51,7 @@ fun StepEmail(
         mutableStateOf(Color(0xFF425980))
     }
     val focusManager = LocalFocusManager.current
+    val coroutineScope = rememberCoroutineScope()
 
     Column(
         modifier = modifier
@@ -69,15 +72,17 @@ fun StepEmail(
                     borderColor = Color.Red
                     supportingText = "Email can't be empty"
                 } else if (android.util.Patterns.EMAIL_ADDRESS.matcher(registrationViewModel.email.value).matches()) {
-                    authViewModel.checkEmailAvailability(registrationViewModel.email.value) { isAvailable ->
-                        if (isAvailable) {
-                            registrationViewModel.email.isValid = true
-                            borderColor = Color(0xFF425980)
-                            supportingText = ""
-                        } else {
-                            registrationViewModel.email.isValid = false
-                            borderColor = Color.Red
-                            supportingText = "Account with that email already existing"
+                    coroutineScope.launch {
+                        authViewModel.checkEmailAvailability(registrationViewModel.email.value) { isAvailable ->
+                            if (isAvailable) {
+                                registrationViewModel.email.isValid = true
+                                borderColor = Color(0xFF425980)
+                                supportingText = ""
+                            } else {
+                                registrationViewModel.email.isValid = false
+                                borderColor = Color.Red
+                                supportingText = "Account with that email already existing"
+                            }
                         }
                     }
                 } else {
