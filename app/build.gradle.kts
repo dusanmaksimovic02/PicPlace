@@ -1,8 +1,8 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
-    alias(libs.plugins.google.gms.google.services)
-}
+    id("com.google.gms.google-services")
+    id("com.google.android.libraries.mapsplatform.secrets-gradle-plugin") version "2.0.1"}
 
 android {
     namespace = "com.example.picplace"
@@ -77,4 +77,13 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+    implementation (libs.play.services.maps)
+    implementation (libs.play.services.location)
+    implementation(libs.maps.compose.v442)
+    // Google Maps Compose utility library
+    implementation(libs.maps.compose.utils)
+    // Google Maps Compose widgets library
+    implementation(libs.maps.compose.widgets)
+    implementation(libs.play.services.maps.v1802)
+    implementation(libs.android.maps.utils)
 }
