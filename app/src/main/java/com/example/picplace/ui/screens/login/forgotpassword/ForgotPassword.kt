@@ -22,6 +22,9 @@ import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -61,95 +64,110 @@ fun ForgotPasswordScreen(modifier: Modifier, navController: NavController, authV
     var isFieldFocused by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(10.dp)
-            .pointerInput(Unit) {
-                detectTapGestures(onTap = { focusManager.clearFocus() })
-            },
-    ) {
-        Button(
-            onClick = {
-                navController.popBackStack()
-            },
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color.Transparent
-            ),
-        ) {
-            Icon(
-                imageVector = Icons.Filled.ArrowBack,
-                contentDescription = "Back",
-                tint = Color.White
-            )
-        }
-
-        Text(
-            text = "Find your account",
-            fontSize = 30.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF425980)
-        )
-
-        Text(
-            text = "Enter your email or username",
-            color = Color(0xFF425980)
-        )
-
-        TextField(
-            value = identifier,
-            onValueChange = {
-                identifier = it
-            },
+    Scaffold { innerPadding ->
+        Column(
             modifier = modifier
-                .fillMaxWidth()
-                .border(
-                    BorderStroke(
-                        2.dp,
-                        if (isFieldFocused) Color(0xFF425980) else Color.Transparent
-                    ),
-                    shape = RoundedCornerShape(13.dp)
-                )
-                .onFocusChanged { focusState ->
-                    isFieldFocused = focusState.isFocused
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(horizontal = 10.dp)
+                .pointerInput(Unit) {
+                    detectTapGestures(onTap = { focusManager.clearFocus() })
                 },
-            shape = RoundedCornerShape(13.dp),
-            label = {
-                Text(text = "Email/Username")
-            },
-            colors = TextFieldDefaults.textFieldColors(
-                focusedIndicatorColor = Color.Transparent,
-                unfocusedIndicatorColor = Color.Transparent
-            ),
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Email
-            ),
-        )
-
-        Button(
-            onClick = {
-                coroutineScope.launch {
-                    authViewModel.forgotPassword(
-                        identifier = identifier,
-                        onSuccess = {
-                            Toast.makeText(context, "Reset password is successfully send", Toast.LENGTH_LONG).show()
-                        },
-                        onFailure = {
-                            Toast.makeText(context, "Something went wrong with sending reset password email", Toast.LENGTH_LONG).show()
-                        }
-                    )
-                }
-            },
-            modifier = modifier
-                .fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF425980)
-            ),
         ) {
+            IconButton(
+                onClick = {
+                    navController.popBackStack()
+                }
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.ArrowBack,
+                    contentDescription = "Back",
+                    tint = MaterialTheme.colorScheme.onSurface
+                )
+            }
+
             Text(
-                text = "Send reset password email",
-                color = Color.White,
+                text = "Find your account",
+                fontSize = 35.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF425980)
             )
+
+            Spacer(modifier = modifier.height(10.dp))
+
+            Text(
+                text = "Enter your email or username",
+                color = Color(0xFF425980)
+            )
+
+            Spacer(modifier = modifier.height(15.dp))
+
+            TextField(
+                value = identifier,
+                onValueChange = {
+                    identifier = it
+                },
+                modifier = modifier
+                    .fillMaxWidth()
+                    .border(
+                        BorderStroke(
+                            2.dp,
+                            if (isFieldFocused) Color(0xFF425980) else Color.Transparent
+                        ),
+                        shape = RoundedCornerShape(13.dp)
+                    )
+                    .onFocusChanged { focusState ->
+                        isFieldFocused = focusState.isFocused
+                    },
+                shape = RoundedCornerShape(13.dp),
+                label = {
+                    Text(text = "Email/Username")
+                },
+                colors = TextFieldDefaults.textFieldColors(
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent
+                ),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Email
+                ),
+            )
+
+            Spacer(modifier = modifier.height(10.dp))
+
+            Button(
+                onClick = {
+                    coroutineScope.launch {
+                        authViewModel.forgotPassword(
+                            identifier = identifier,
+                            onSuccess = {
+                                Toast.makeText(
+                                    context,
+                                    "Reset password is successfully send",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            },
+                            onFailure = {
+                                Toast.makeText(
+                                    context,
+                                    "Something went wrong with sending reset password email",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                        )
+                    }
+                },
+                modifier = modifier
+                    .fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF425980)
+                ),
+                shape = RoundedCornerShape(13.dp)
+            ) {
+                Text(
+                    text = "Send reset password email",
+                    color = Color.White,
+                )
+            }
         }
     }
 }

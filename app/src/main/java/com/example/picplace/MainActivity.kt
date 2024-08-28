@@ -9,12 +9,15 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Modifier
+import androidx.core.app.ActivityCompat
 import androidx.core.app.ActivityCompat.requestPermissions
 import androidx.core.content.ContextCompat
 import com.example.picplace.models.auth.AuthState
@@ -25,7 +28,6 @@ import com.example.picplace.ui.navigation.Navigation
 import com.example.picplace.ui.theme.PicPlaceTheme
 
 class MainActivity : ComponentActivity() {
-    private var locationServiceIntent: Intent? = null
     @RequiresApi(Build.VERSION_CODES.O)
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -48,8 +50,23 @@ class MainActivity : ComponentActivity() {
                         is AuthState.Authenticated -> {
                             if (!areLocationPermissionsGranted()) {
                                 requestLocationPermissions()
+                                if (areLocationPermissionsGranted()) startLocationService()
                             } else {
                                 startLocationService()
+                            }
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                if (ActivityCompat.checkSelfPermission(
+                                        applicationContext,
+                                        Manifest.permission.POST_NOTIFICATIONS
+                                    ) != PackageManager.PERMISSION_GRANTED) {
+                                    requestPermissions(
+                                        this,
+                                        arrayOf(
+                                            Manifest.permission.POST_NOTIFICATIONS,
+                                        ),
+                                        0
+                                    )
+                                }
                             }
                         }
                         is AuthState.Unauthenticated -> {
@@ -81,15 +98,7 @@ class MainActivity : ComponentActivity() {
             this, Manifest.permission.ACCESS_COARSE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
 
-        val backgroundLocationGranted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            ContextCompat.checkSelfPermission(
-                this, Manifest.permission.ACCESS_BACKGROUND_LOCATION
-            ) == PackageManager.PERMISSION_GRANTED
-        } else {
-            true
-        }
-
-        return fineLocationGranted && coarseLocationGranted && backgroundLocationGranted
+        return fineLocationGranted && coarseLocationGranted
     }
 
     private fun requestLocationPermissions() {
@@ -120,17 +129,17 @@ class MainActivity : ComponentActivity() {
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    private fun startLocationService() {
-        if (locationServiceIntent == null) {
-            locationServiceIntent = Intent(applicationContext, LocationTrackerService::class.java)
-            startForegroundService(locationServiceIntent)
+    internal fun startLocationService() {
+        Intent(applicationContext, LocationTrackerService::class.java).apply {
+            action = LocationTrackerService.ACTION_START
+            startService(this)
         }
     }
 
-    private fun stopLocationService() {
-        locationServiceIntent?.let {
-            stopService(it)
-            locationServiceIntent = null
+    internal fun stopLocationService() {
+        Intent(applicationContext, LocationTrackerService::class.java).apply {
+            action = LocationTrackerService.ACTION_STOP
+            startService(this)
         }
     }
 }

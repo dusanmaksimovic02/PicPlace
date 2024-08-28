@@ -38,6 +38,7 @@ class DefaultLocationClient(
 
             val locationCallback = object : LocationCallback() {
                 override fun onLocationResult(locationResult: LocationResult) {
+                    super.onLocationResult(locationResult)
                     locationResult.locations.lastOrNull()?.let { location ->
                         Log.i("LOCATION CLIENT", location.toString())
                         launch {

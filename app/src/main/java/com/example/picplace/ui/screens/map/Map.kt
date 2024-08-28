@@ -32,8 +32,10 @@ import com.example.picplace.models.auth.AuthViewModel
 import com.example.picplace.models.auth.MockAuthViewModel
 import com.example.picplace.models.user.MockUserViewModel
 import com.example.picplace.models.user.UserViewModel
+import com.example.picplace.services.LocationTrackerService
 import com.example.picplace.ui.navigation.BottomNavigationBar
 import com.example.picplace.ui.navigation.Screens
+import com.example.picplace.ui.screens.profile.isServiceRunning
 import com.example.picplace.ui.theme.PicPlaceTheme
 import com.example.picplace.utils.DefaultLocationClient
 import com.google.android.gms.location.LocationServices
@@ -60,23 +62,19 @@ fun MapScreen(
     var currentLocation by remember {
         mutableStateOf<LatLng?>(null)
     }
-    val locationClient = remember {
-        DefaultLocationClient(context, LocationServices.getFusedLocationProviderClient(context))
-    }
-    val mapUiSettings = MapUiSettings()
-    val properties by remember {
-        mutableStateOf(MapProperties(
-            mapType= MapType.HYBRID,
-            isIndoorEnabled = true,
-            isBuildingEnabled = true,
-            isTrafficEnabled = true,
-            isMyLocationEnabled = true
-        ))
+    val isLocationServiceRunning by remember {
+        mutableStateOf(isServiceRunning(context, LocationTrackerService::class.java))
     }
 
-    LaunchedEffect(Unit) {
-        locationClient.getLocationUpdates(10000L).collect { location ->
-            currentLocation = LatLng(location.latitude, location.longitude)
+    if (isLocationServiceRunning) {
+        val locationClient = remember {
+            DefaultLocationClient(context, LocationServices.getFusedLocationProviderClient(context))
+        }
+
+        LaunchedEffect(Unit) {
+            locationClient.getLocationUpdates(10000L).collect { location ->
+                currentLocation = LatLng(location.latitude, location.longitude)
+            }
         }
     }
 
@@ -92,8 +90,20 @@ fun MapScreen(
 
     LaunchedEffect(currentLocation) {
         val userLocation = currentLocation ?: defaultLocation
-        cameraPositionState.position = CameraPosition.fromLatLngZoom(userLocation, 15f)
+        cameraPositionState.position = CameraPosition.fromLatLngZoom(userLocation, 16f)
     }
+
+    val mapUiSettings = MapUiSettings()
+    val properties by remember {
+        mutableStateOf(MapProperties(
+            mapType= MapType.HYBRID,
+            isIndoorEnabled = true,
+            isBuildingEnabled = true,
+            isTrafficEnabled = true,
+            isMyLocationEnabled = isLocationServiceRunning
+        ))
+    }
+
 
     var searchText by remember { mutableStateOf("") }
     var searchResults by remember { mutableStateOf<List<LatLng>>(emptyList()) }

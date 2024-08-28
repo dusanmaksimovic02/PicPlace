@@ -1,5 +1,7 @@
 package com.example.picplace.ui.navigation
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
@@ -15,10 +17,13 @@ import com.example.picplace.ui.screens.home.HomeScreen
 import com.example.picplace.ui.screens.leaderboard.LeaderboardScreen
 import com.example.picplace.ui.screens.login.LoginScreen
 import com.example.picplace.ui.screens.map.MapScreen
+import com.example.picplace.ui.screens.map.addplace.AddPlaceScreen
+import com.example.picplace.ui.screens.map.addplace.ViewPlaceScreen
 import com.example.picplace.ui.screens.profile.ProfileScreen
 import com.example.picplace.ui.screens.profile.updateprofileimage.UpdateProfileImage
 import com.example.picplace.ui.screens.register.RegisterScreen
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun Navigation(
     modifier: Modifier,
@@ -112,6 +117,15 @@ fun Navigation(
                 }
             )
         }
-
+        composable(Screens.AddPlaceScreen.screen) {
+            AddPlaceScreen(
+                modifier = modifier
+            )
+        }
+        composable(Screens.ViewPlaceScreen.screen) {
+            ViewPlaceScreen(
+                modifier = modifier
+            )
+        }
     })
 }

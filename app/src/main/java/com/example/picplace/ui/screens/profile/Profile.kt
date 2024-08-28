@@ -1,11 +1,13 @@
 package com.example.picplace.ui.screens.profile
 
+import android.app.ActivityManager
+import android.content.Context
+import android.os.Build
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
@@ -17,14 +19,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
-import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.outlined.Check
 import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.Logout
-import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Card
-import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -33,7 +32,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -61,16 +61,19 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.example.picplace.MainActivity
 import com.example.picplace.models.auth.AuthState
 import com.example.picplace.models.auth.AuthViewModel
 import com.example.picplace.models.auth.MockAuthViewModel
 import com.example.picplace.models.user.MockUserViewModel
 import com.example.picplace.models.user.UserViewModel
+import com.example.picplace.services.LocationTrackerService
 import com.example.picplace.ui.navigation.BottomNavigationBar
 import com.example.picplace.ui.navigation.Screens
 import com.example.picplace.ui.theme.PicPlaceTheme
 import kotlinx.coroutines.launch
 
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
@@ -99,6 +102,12 @@ fun ProfileScreen(
     val windowInsets = if (edgeToEdgeEnabled)
         WindowInsets(0) else BottomSheetDefaults.windowInsets
     var showBottomSheet by remember {
+        mutableStateOf(false)
+    }
+    var isLocationTrackerAllowed by remember {
+        mutableStateOf(isServiceRunning(context, LocationTrackerService::class.java))
+    }
+    var isSendNotificationAllowed by remember {
         mutableStateOf(false)
     }
 
@@ -306,10 +315,91 @@ fun ProfileScreen(
                 )
             }
 
+            Column(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .padding(10.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            )  {
+                Row(
+                    modifier = modifier
+                        .fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Allow tracking location",
+                        color = Color(0xff425980),
+                        modifier = modifier
+                            .weight(1f)
+                    )
+
+                    Switch(
+                        checked = isLocationTrackerAllowed,
+                        onCheckedChange = { isChecked ->
+                            isLocationTrackerAllowed = isChecked
+                            if (isChecked) {
+                                (context as MainActivity).startLocationService()
+                            } else {
+                                (context as MainActivity).stopLocationService()
+                            }
+                        },
+                        colors = SwitchDefaults.colors(
+                            checkedTrackColor = Color(0xFF425980),
+                        ),
+                        thumbContent = if (isLocationTrackerAllowed) {
+                            {
+                                Icon(
+                                    imageVector = Icons.Outlined.Check,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(SwitchDefaults.IconSize),
+                                )
+                            }
+                        } else {
+                            null
+                        }
+                    )
+                }
+
+                Row(
+                    modifier = modifier
+                        .fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                )  {
+                    Text(
+                        text = "Allow sending notification about nearby places",
+                        color = Color(0xff425980),
+                        modifier = modifier
+                            .weight(1f)
+                    )
+                    Switch(
+                        checked = isSendNotificationAllowed,
+                        onCheckedChange = { isSendNotificationAllowed = it },
+                        colors = SwitchDefaults.colors(
+                            checkedTrackColor = Color(0xFF425980),
+                        ),
+                        thumbContent = if (isSendNotificationAllowed) {
+                            {
+                                Icon(
+                                    imageVector = Icons.Outlined.Check,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(SwitchDefaults.IconSize),
+                                )
+                            }
+                        } else {
+                            null
+                        }
+                    )
+                }
+            }
+
         }
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Preview(
     showBackground = true,
     backgroundColor = 2
@@ -350,5 +440,12 @@ fun BottomSheetContent(
             headlineContent = { Text("Update Picture") },
             modifier = Modifier.clickable { onUpdatePicture() }
         )
+    }
+}
+
+fun isServiceRunning(context: Context, serviceClass: Class<*>): Boolean {
+    val manager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+    return manager.getRunningServices(Integer.MAX_VALUE).any {
+        it.service.className == serviceClass.name
     }
 }
