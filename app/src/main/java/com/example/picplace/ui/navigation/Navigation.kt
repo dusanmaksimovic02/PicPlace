@@ -9,6 +9,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.picplace.models.auth.AuthState
 import com.example.picplace.models.auth.AuthViewModel
+import com.example.picplace.models.place.PlaceViewModel
 import com.example.picplace.models.user.UserViewModel
 import com.example.picplace.ui.screens.profile.edituser.EditUserScreen
 import com.example.picplace.ui.screens.login.forgotpassword.ForgotPasswordScreen
@@ -28,7 +29,8 @@ import com.example.picplace.ui.screens.register.RegisterScreen
 fun Navigation(
     modifier: Modifier,
     authViewModel: AuthViewModel,
-    userViewModel: UserViewModel
+    userViewModel: UserViewModel,
+    placeViewModel: PlaceViewModel
 ){
     val navController = rememberNavController()
 
@@ -119,7 +121,8 @@ fun Navigation(
         }
         composable(Screens.AddPlaceScreen.screen) {
             AddPlaceScreen(
-                modifier = modifier
+                modifier = modifier,
+                placeViewModel = placeViewModel
             )
         }
         composable(Screens.ViewPlaceScreen.screen) {

@@ -22,6 +22,7 @@ import androidx.core.app.ActivityCompat.requestPermissions
 import androidx.core.content.ContextCompat
 import com.example.picplace.models.auth.AuthState
 import com.example.picplace.models.auth.AuthViewModel
+import com.example.picplace.models.place.PlaceViewModel
 import com.example.picplace.models.user.UserViewModel
 import com.example.picplace.services.LocationTrackerService
 import com.example.picplace.ui.navigation.Navigation
@@ -35,6 +36,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         val authViewModel : AuthViewModel by viewModels()
         val userViewModel : UserViewModel by viewModels()
+        val placeViewModel : PlaceViewModel by viewModels()
 
         setContent {
             PicPlaceTheme {
@@ -42,7 +44,8 @@ class MainActivity : ComponentActivity() {
                     Navigation(
                         modifier =  Modifier,
                         authViewModel = authViewModel,
-                        userViewModel = userViewModel
+                        userViewModel = userViewModel,
+                        placeViewModel = placeViewModel
                     )
                     val authState = authViewModel.authState.observeAsState()
 
@@ -87,6 +90,18 @@ class MainActivity : ComponentActivity() {
     override fun onStop() {
         super.onStop()
         stopLocationService()
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    override fun onResume() {
+        super.onResume()
+        startLocationService()
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    override fun onRestart() {
+        super.onRestart()
+        startLocationService()
     }
 
     private fun areLocationPermissionsGranted(): Boolean {
