@@ -2,6 +2,7 @@ package com.example.picplace.ui.screens.profile
 
 import android.app.ActivityManager
 import android.content.Context
+import android.content.res.Configuration
 import android.os.Build
 import android.widget.Toast
 import androidx.annotation.RequiresApi
@@ -54,6 +55,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -64,6 +66,7 @@ import coil.request.ImageRequest
 import com.example.picplace.MainActivity
 import com.example.picplace.models.auth.AuthState
 import com.example.picplace.models.auth.AuthViewModel
+import com.example.picplace.models.auth.AuthViewModel.Companion.isPreviewMode
 import com.example.picplace.models.auth.MockAuthViewModel
 import com.example.picplace.models.user.MockUserViewModel
 import com.example.picplace.models.user.UserViewModel
@@ -105,7 +108,11 @@ fun ProfileScreen(
         mutableStateOf(false)
     }
     var isLocationTrackerAllowed by remember {
-        mutableStateOf(isServiceRunning(context, LocationTrackerService::class.java))
+        mutableStateOf(if(isPreviewMode) {
+            true
+        } else {
+            isServiceRunning(context, LocationTrackerService::class.java)
+        })
     }
     var isSendNotificationAllowed by remember {
         mutableStateOf(false)
@@ -116,6 +123,10 @@ fun ProfileScreen(
             is AuthState.Unauthenticated -> navController.navigate(Screens.Login.screen)
             else -> Unit
         }
+    }
+
+    LaunchedEffect(Unit) {
+        userViewModel.updateCurrentUser()
     }
 
     if(showBottomSheet) {
@@ -229,7 +240,7 @@ fun ProfileScreen(
                     )
 
                     Text(
-                        text = "Score:  0",
+                        text = "Score:  ${userData.value!!.score}",
                         fontSize = 20.sp,
                         color = Color(0xFF425980)
                     )
@@ -401,8 +412,9 @@ fun ProfileScreen(
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Preview(
+    showSystemUi = true,
     showBackground = true,
-    backgroundColor = 2
+    uiMode = Configuration.UI_MODE_NIGHT_YES
 )
 @Composable
 fun ProfilePreview() {

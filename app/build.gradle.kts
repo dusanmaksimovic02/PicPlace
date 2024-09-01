@@ -80,10 +80,10 @@ dependencies {
     implementation (libs.play.services.maps)
     implementation (libs.play.services.location)
     implementation(libs.maps.compose.v442)
-    // Google Maps Compose utility library
     implementation(libs.maps.compose.utils)
-    // Google Maps Compose widgets library
     implementation(libs.maps.compose.widgets)
     implementation(libs.play.services.maps.v1802)
     implementation(libs.android.maps.utils)
+    implementation(libs.gson)
+
 }

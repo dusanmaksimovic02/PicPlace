@@ -9,4 +9,11 @@ class MockPlaceViewModel : PlaceViewModel() {
     ) {
         onSuccess("Place added successfully!")
     }
+
+    override fun getPlaces(
+        onSuccess: (List<PlaceFirebase>) -> Unit,
+        onFailure: (String) -> Unit
+    ) {
+        onSuccess(emptyList())
+    }
 }

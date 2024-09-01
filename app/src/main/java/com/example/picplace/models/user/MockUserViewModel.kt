@@ -18,4 +18,15 @@ class MockUserViewModel : UserViewModel() {
     }
 
     override val userData: LiveData<UserData?> = _mockUserData
+
+    override suspend fun fetchUser (id : String) : UserData {
+        return UserData(
+            username = "MockUser",
+            name = "John",
+            surname = "Doe",
+            phoneNumber = "+1234567890",
+            email = "mockuser@example.com",
+            imageUrl = ""
+        )
+    }
 }

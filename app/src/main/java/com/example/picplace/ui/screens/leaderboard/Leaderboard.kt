@@ -13,8 +13,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -28,6 +30,8 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,6 +51,7 @@ import com.example.picplace.R
 import com.example.picplace.models.auth.AuthState
 import com.example.picplace.models.auth.AuthViewModel
 import com.example.picplace.models.auth.MockAuthViewModel
+import com.example.picplace.models.auth.UserData
 import com.example.picplace.models.user.MockUserViewModel
 import com.example.picplace.models.user.UserViewModel
 import com.example.picplace.ui.navigation.BottomNavigationBar
@@ -62,22 +67,28 @@ fun LeaderboardScreen(
     userViewModel: UserViewModel
 ) {
     val authState = authViewModel.authState.observeAsState()
-    val users = listOf(
-        User("Alice", 1200, false),
-        User("Bob", 1150, false),
-        User( "Charlie", 1100, true),
-        User("Dave", 1500, false),
-        User("Dave", 2360, false),
-        User("Dave", 150, false),
-        User("Dave", 2, false),
-        User("Dave", 1342, false)
-    ).sortedByDescending { it.score }
+    val userData = userViewModel.userData.observeAsState()
+    val users by userViewModel.users.observeAsState()
+//    val users = listOf(
+//        User("Alice", 1200, false),
+//        User("Bob", 1150, false),
+//        User( "Charlie", 1100, true),
+//        User("Dave", 1500, false),
+//        User("Dave", 2360, false),
+//        User("Dave", 150, false),
+//        User("Dave", 2, false),
+//        User("Dave", 1342, false)
+//    ).sortedByDescending { it.score }
 
     LaunchedEffect(authState.value) {
         when(authState.value){
             is AuthState.Unauthenticated -> navController.navigate(Screens.Login.screen)
             else -> Unit
         }
+    }
+    
+    LaunchedEffect(Unit) {
+        userViewModel.updateUsers()
     }
 
     Scaffold(
@@ -107,31 +118,27 @@ fun LeaderboardScreen(
         Column(
             modifier = modifier
                 .fillMaxSize()
-                .padding(innerPadding),
+                .padding(innerPadding)
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            LazyColumn {
-                itemsIndexed(users) { index, user ->
-                    LeaderboardItemRow(user = user, rank = index + 1)
+            Column(
+                modifier = modifier
+                    .padding(10.dp)
+            ) {
+                users?.forEachIndexed { index, user ->
+                    LeaderboardItemRow(user = user, rank = index + 1, user.id == userData.value?.id)
                 }
             }
         }
     }
 }
 
-data class User(
-    val name: String,
-    val score: Int,
-    val isCurrentUser: Boolean,
-    val profileImage: String = "https://firebasestorage.googleapis.com/v0/b/pic-place-4e026.appspot.com/o/profile_pictures%2FksqjFUbue0TetszjzUvsJLRQ9mI3.jpg?alt=media&token=3bb1b959-fd0e-4b97-b247-8d443cbcfca1"
-
-)
-
 @Composable
-fun LeaderboardItemRow(user: User, rank: Number) {
-    val backgroundColor = if (user.isCurrentUser) MaterialTheme.colorScheme.surfaceColorAtElevation(3.dp) else Color.Transparent
-    val textColor = if (user.isCurrentUser) Color(0xFF425980) else Color.Black
-    val borderStroke: BorderStroke = if(user.isCurrentUser) {
+fun LeaderboardItemRow(user: UserData, rank: Number, isCurrentUser: Boolean) {
+    val backgroundColor = if (isCurrentUser) MaterialTheme.colorScheme.surfaceColorAtElevation(3.dp) else Color.Transparent
+    val textColor = if (isCurrentUser) Color(0xFF425980) else Color.Black
+    val borderStroke: BorderStroke = if(isCurrentUser) {
         BorderStroke(3.dp, Color(0xFF425980))
     } else {
         BorderStroke(0.dp, Color.Transparent)
@@ -159,7 +166,7 @@ fun LeaderboardItemRow(user: User, rank: Number) {
             ) {
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
-                        .data(user.profileImage)
+                        .data(user.imageUrl)
                         .crossfade(true)
                         .build(),
                     contentDescription = "Profile Picture",
@@ -179,7 +186,7 @@ fun LeaderboardItemRow(user: User, rank: Number) {
                             .padding(start = 16.dp)
                     ) {
                         Text(
-                            text = user.name,
+                            text = user.username,
                             fontWeight = FontWeight.Bold
                         )
                         Text(text = "Score: ${user.score}")

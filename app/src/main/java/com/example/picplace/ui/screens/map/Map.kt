@@ -1,23 +1,16 @@
 package com.example.picplace.ui.screens.map
 
-import androidx.compose.foundation.Image
+import android.content.res.Configuration
+import android.net.Uri
+import android.util.Log
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SearchBar
-import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -32,9 +25,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
+import com.example.picplace.R
 import com.example.picplace.models.auth.AuthState
 import com.example.picplace.models.auth.AuthViewModel
+import com.example.picplace.models.auth.AuthViewModel.Companion.isPreviewMode
 import com.example.picplace.models.auth.MockAuthViewModel
+import com.example.picplace.models.place.MockPlaceViewModel
+import com.example.picplace.models.place.PlaceFirebase
+import com.example.picplace.models.place.PlaceViewModel
 import com.example.picplace.models.user.MockUserViewModel
 import com.example.picplace.models.user.UserViewModel
 import com.example.picplace.services.LocationTrackerService
@@ -44,23 +43,25 @@ import com.example.picplace.ui.screens.profile.isServiceRunning
 import com.example.picplace.ui.theme.PicPlaceTheme
 import com.example.picplace.utils.DefaultLocationClient
 import com.google.android.gms.location.LocationServices
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
-import com.google.android.material.search.SearchBar
-import com.google.android.material.search.SearchView
+import com.google.gson.Gson
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapType
 import com.google.maps.android.compose.MapUiSettings
+import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.rememberCameraPositionState
+import com.google.maps.android.compose.rememberMarkerState
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MapScreen(
     modifier: Modifier,
     navController: NavController,
     authViewModel: AuthViewModel,
-    userViewModel: UserViewModel
+    userViewModel: UserViewModel,
+    placeViewModel: PlaceViewModel
 ) {
     val authState = authViewModel.authState.observeAsState()
     val context = LocalContext.current
@@ -68,7 +69,14 @@ fun MapScreen(
         mutableStateOf<LatLng?>(null)
     }
     val isLocationServiceRunning by remember {
-        mutableStateOf(isServiceRunning(context, LocationTrackerService::class.java))
+        mutableStateOf(if (isPreviewMode) {
+            true
+        }else {
+            isServiceRunning(context, LocationTrackerService::class.java)
+        })
+    }
+    var places by remember {
+        mutableStateOf<List<PlaceFirebase>>(emptyList())
     }
 
     if (isLocationServiceRunning) {
@@ -83,6 +91,17 @@ fun MapScreen(
         }
     }
 
+    LaunchedEffect(Unit) {
+        placeViewModel.getPlaces(
+            onSuccess = { fetchedPlaces ->
+                places = fetchedPlaces
+            },
+            onFailure = { errorMessage ->
+                Log.e("MapScreen", "Error fetching places: $errorMessage")
+            }
+        )
+    }
+
     LaunchedEffect(authState.value) {
         when(authState.value){
             is AuthState.Unauthenticated -> navController.navigate(Screens.Login.screen)
@@ -93,25 +112,24 @@ fun MapScreen(
     val defaultLocation = LatLng(43.321445, 21.896104)
     val cameraPositionState = rememberCameraPositionState()
 
+    var userLocation by remember {
+        mutableStateOf(LatLng(0.0, 0.0))
+    }
+
     LaunchedEffect(currentLocation) {
-        val userLocation = currentLocation ?: defaultLocation
+        userLocation = currentLocation ?: defaultLocation
         cameraPositionState.position = CameraPosition.fromLatLngZoom(userLocation, 16f)
     }
+
+    val gson = remember { Gson() }
 
     val mapUiSettings = MapUiSettings()
     val properties by remember {
         mutableStateOf(MapProperties(
             mapType= MapType.HYBRID,
-            isIndoorEnabled = true,
-            isBuildingEnabled = true,
-            isTrafficEnabled = true,
             isMyLocationEnabled = isLocationServiceRunning
         ))
     }
-
-
-    var searchText by remember { mutableStateOf("") }
-    var searchResults by remember { mutableStateOf<List<LatLng>>(emptyList()) }
 
     Scaffold(
         bottomBar = {
@@ -130,12 +148,35 @@ fun MapScreen(
                 modifier = Modifier.fillMaxSize(),
                 cameraPositionState= cameraPositionState,
                 properties = properties,
-                uiSettings= mapUiSettings
-            )
+                uiSettings= mapUiSettings,
+                onMapLongClick = { latLng ->
+                    navController.navigate("${Screens.AddPlaceScreen.screen}/${latLng.latitude.toFloat()}/${latLng.longitude.toFloat()}")
+                }
+            ) {
+                if (places.isNotEmpty()) {
+                    places.forEach { place ->
+                        val markerIcon = BitmapDescriptorFactory.fromResource(R.mipmap.ic_marker)
+
+                        Marker(
+                            state = rememberMarkerState(position = place.latLng.toLatLng()),
+                            title = place.name,
+                            snippet = place.description,
+                            icon = markerIcon,
+                            onClick = {
+                                val placeJson = Uri.encode(gson.toJson(place))
+
+                                navController.navigate("${Screens.ViewPlaceScreen.screen}/$placeJson")
+
+                                true
+                            }
+                        )
+                    }
+                }
+            }
 
             Button(
                 onClick = {
-                    navController.navigate(Screens.AddPlaceScreen.screen)
+                    navController.navigate("${Screens.AddPlaceScreen.screen}/${userLocation.latitude.toFloat()}/${userLocation.longitude.toFloat()}")
                 },
                 modifier = Modifier
                     .align(Alignment.BottomStart)
@@ -155,18 +196,20 @@ fun MapScreen(
 }
 
 @Preview(
+    showSystemUi = true,
     showBackground = true,
-    backgroundColor = 2
+    uiMode = Configuration.UI_MODE_NIGHT_YES
 )
 @Composable
 fun MapPreview() {
-    AuthViewModel.isPreviewMode = true
+    isPreviewMode = true
     PicPlaceTheme {
         MapScreen(
             modifier = Modifier,
-            navController = NavController(LocalContext.current),
+            navController = rememberNavController(),
             authViewModel = MockAuthViewModel(),
-            userViewModel = MockUserViewModel()
+            userViewModel = MockUserViewModel(),
+            placeViewModel = MockPlaceViewModel()
         )
     }
 }

@@ -82,28 +82,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.O)
-    override fun onStart() {
-        super.onStart()
-    }
-
-    override fun onStop() {
-        super.onStop()
-        stopLocationService()
-    }
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    override fun onResume() {
-        super.onResume()
-        startLocationService()
-    }
-
-    @RequiresApi(Build.VERSION_CODES.O)
-    override fun onRestart() {
-        super.onRestart()
-        startLocationService()
-    }
-
     private fun areLocationPermissionsGranted(): Boolean {
         val fineLocationGranted = ContextCompat.checkSelfPermission(
             this, Manifest.permission.ACCESS_FINE_LOCATION

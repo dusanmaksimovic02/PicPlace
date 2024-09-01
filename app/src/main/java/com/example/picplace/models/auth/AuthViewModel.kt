@@ -147,6 +147,7 @@ open class AuthViewModel : ViewModel() {
             }
 
             val user = UserData(
+                currentUser.uid,
                 email,
                 username,
                 name,

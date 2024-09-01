@@ -4,11 +4,14 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.picplace.models.auth.AuthState
 import com.example.picplace.models.auth.AuthViewModel
+import com.example.picplace.models.place.PlaceFirebase
 import com.example.picplace.models.place.PlaceViewModel
 import com.example.picplace.models.user.UserViewModel
 import com.example.picplace.ui.screens.profile.edituser.EditUserScreen
@@ -19,10 +22,12 @@ import com.example.picplace.ui.screens.leaderboard.LeaderboardScreen
 import com.example.picplace.ui.screens.login.LoginScreen
 import com.example.picplace.ui.screens.map.MapScreen
 import com.example.picplace.ui.screens.map.addplace.AddPlaceScreen
-import com.example.picplace.ui.screens.map.addplace.ViewPlaceScreen
+import com.example.picplace.ui.screens.map.viewplace.ViewPlaceScreen
 import com.example.picplace.ui.screens.profile.ProfileScreen
 import com.example.picplace.ui.screens.profile.updateprofileimage.UpdateProfileImage
 import com.example.picplace.ui.screens.register.RegisterScreen
+import com.google.android.gms.maps.model.LatLng
+import com.google.gson.Gson
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -33,6 +38,7 @@ fun Navigation(
     placeViewModel: PlaceViewModel
 ){
     val navController = rememberNavController()
+    val gson = Gson()
 
     val startDestination = if (authViewModel.authState.value is AuthState.Authenticated) {
         Screens.Home.screen
@@ -85,7 +91,8 @@ fun Navigation(
                 modifier = modifier,
                 navController = navController,
                 authViewModel = authViewModel,
-                userViewModel = userViewModel
+                userViewModel = userViewModel,
+                placeViewModel = placeViewModel
             )
         }
         composable(Screens.Profile.screen) {
@@ -119,15 +126,40 @@ fun Navigation(
                 }
             )
         }
-        composable(Screens.AddPlaceScreen.screen) {
+        composable(
+            route = "${Screens.AddPlaceScreen.screen}/{latitude}/{longitude}",
+            arguments = listOf(
+                navArgument("latitude") { type = NavType.FloatType },
+                navArgument("longitude") { type = NavType.FloatType }
+            )
+        ) { backStackEntry ->
+            val latitude = backStackEntry.arguments?.getFloat("latitude")
+            val longitude = backStackEntry.arguments?.getFloat("longitude")
+            val location = LatLng(latitude!!.toDouble(), longitude!!.toDouble())
             AddPlaceScreen(
                 modifier = modifier,
-                placeViewModel = placeViewModel
+                placeViewModel = placeViewModel,
+                navController = navController,
+                location = location
             )
         }
-        composable(Screens.ViewPlaceScreen.screen) {
+        composable(
+            route = "${Screens.ViewPlaceScreen.screen}/{placeJson}",
+            arguments = listOf(
+                navArgument("placeJson") {
+                    type = NavType.StringType
+                }
+            )
+        ) { backStackEntry ->
+            val placeJson = backStackEntry.arguments?.getString("placeJson")
+            val place = placeJson?.let { gson.fromJson(it, PlaceFirebase::class.java) }
+
             ViewPlaceScreen(
-                modifier = modifier
+                modifier = modifier,
+                navController = navController,
+                userViewModel = userViewModel,
+                place = place,
+                placeViewModel = placeViewModel
             )
         }
     })

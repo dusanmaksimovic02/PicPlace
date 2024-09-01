@@ -20,11 +20,19 @@ open class UserViewModel() : ViewModel() {
     private val _userData = MutableLiveData<UserData?>()
     open val userData: LiveData<UserData?> get() = _userData
 
+    private val _users = MutableLiveData<List<UserData>>(emptyList())
+    val users: LiveData<List<UserData>> = _users
+
+    private val _topUsers = MutableLiveData<List<UserData>>(emptyList())
+    val topUsers: LiveData<List<UserData>> = _topUsers
+
     init {
         if (!isPreviewMode) {
             auth = FirebaseAuth.getInstance()
             firestore = FirebaseFirestore.getInstance()
             fetchCurrentUserData()
+            fetchUsers()
+            fetchTop5Users()
         }
     }
 
@@ -41,6 +49,67 @@ open class UserViewModel() : ViewModel() {
         } catch (e: Exception) {
             Log.e("Error in fetchUserData", e.message.toString())
         }
+    }
+
+    fun updateCurrentUser() {
+        fetchCurrentUserData()
+    }
+
+    open suspend fun fetchUser(id: String) : UserData? {
+        var user: UserData? = UserData()
+        try {
+            val document = firestore?.collection("users")?.document(id)?.get()?.await()
+            user = document?.toObject(UserData::class.java)
+            return user
+        } catch (e: Exception) {
+            Log.e("Error in fetchUserData", e.message.toString())
+        }
+        return UserData()
+    }
+
+    private fun fetchUsers() {
+        firestore?.collection("users")
+            ?.orderBy("score", com.google.firebase.firestore.Query.Direction.DESCENDING)
+            ?.addSnapshotListener { snapshot, exception ->
+                if (exception != null) {
+                    Log.e("FetchUsers", "Error while fetching users")
+                    return@addSnapshotListener
+                }
+
+                if (snapshot != null && !snapshot.isEmpty) {
+                    val userList = snapshot.documents.mapNotNull { document ->
+                        document.toObject(UserData::class.java)
+                    }
+                    _users.value = userList
+                }
+            }
+    }
+
+    private fun fetchTop5Users() {
+        firestore?.collection("users")
+            ?.orderBy("score", com.google.firebase.firestore.Query.Direction.DESCENDING)
+            ?.limit(5)
+            ?.addSnapshotListener { snapshot, exception ->
+                if (exception != null) {
+                    Log.e("FetchUsers", "Error while fetching users")
+                    return@addSnapshotListener
+                }
+
+                if (snapshot != null && !snapshot.isEmpty) {
+                    val userList = snapshot.documents.mapNotNull { document ->
+                        document.toObject(UserData::class.java)
+                    }
+                    _topUsers.value = userList
+                }
+            }
+    }
+
+    fun updateTopUsers() {
+        fetchTop5Users()
+    }
+
+    fun updateUsers() {
+        fetchUsers()
     }
 
     fun clearUserData() {

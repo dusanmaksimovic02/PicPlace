@@ -55,16 +55,23 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import com.example.picplace.models.place.MockPlaceViewModel
 import com.example.picplace.models.place.Place
 import com.example.picplace.models.place.PlaceViewModel
+import com.example.picplace.models.place.SerializableLatLng
 import com.example.picplace.ui.components.CustomTextField
+import com.example.picplace.ui.navigation.Screens
 import com.example.picplace.ui.theme.PicPlaceTheme
+import com.google.android.gms.maps.model.LatLng
 
 @Composable
 fun AddPlaceScreen(
     modifier: Modifier,
+    navController: NavController,
+    location: LatLng,
     placeViewModel: PlaceViewModel
 ) {
     var selectedImageUris by remember {
@@ -412,10 +419,16 @@ fun AddPlaceScreen(
                             name = placeName,
                             description = description,
                             imageUris = selectedImageUris,
-                            poll = defaultPoolQuestions + customPollQuestions
+                            latLng = SerializableLatLng(location.latitude, location.longitude),
+                            poll = if(isAddPollChecked) {
+                                defaultPoolQuestions + customPollQuestions
+                            } else {
+                                emptyList()
+                            }
                         ),
                         onSuccess = { message ->
                             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                            navController.navigate(Screens.Map.screen)
                         },
                         onFailure = { message ->
                             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
@@ -444,7 +457,9 @@ fun AddPlacePreview() {
     PicPlaceTheme {
         AddPlaceScreen(
             modifier = Modifier,
-            placeViewModel = MockPlaceViewModel()
+            placeViewModel = MockPlaceViewModel(),
+            navController = rememberNavController(),
+            location = LatLng(0.0, 0.0)
         )
     }
 }
