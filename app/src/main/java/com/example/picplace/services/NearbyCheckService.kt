@@ -16,6 +16,7 @@
     import com.example.picplace.utils.DefaultLocationClient
     import com.example.picplace.utils.LocationClient
     import com.google.android.gms.location.LocationServices
+    import com.google.firebase.auth.FirebaseAuth
     import com.google.firebase.firestore.FirebaseFirestore
     import kotlinx.coroutines.CoroutineScope
     import kotlinx.coroutines.Dispatchers
@@ -33,6 +34,7 @@
         private lateinit var notificationManager: NotificationManager
         private lateinit var firestore: FirebaseFirestore
         private lateinit var locationClient: LocationClient
+        private lateinit var firebase: FirebaseAuth
 
         override fun onBind(intent: Intent?): IBinder? {
             return null
@@ -47,6 +49,7 @@
                 applicationContext,
                 LocationServices.getFusedLocationProviderClient(applicationContext)
             )
+            firebase = FirebaseAuth.getInstance()
         }
 
         override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -72,6 +75,7 @@
                 val currentLong = location.longitude
 
                 firestore.collection("places")
+                    .whereNotEqualTo("userId",firebase.currentUser?.uid)
                     .get()
                     .addOnSuccessListener { documents ->
                         for (document in documents) {
@@ -93,7 +97,7 @@
         private fun isNearby(userLat: Double, userLong: Double, objectLat: Double, objectLong: Double): Boolean {
             val results = FloatArray(1)
             android.location.Location.distanceBetween(userLat, userLong, objectLat, objectLong, results)
-            return results[0] < 10 // 10 meters
+            return results[0] < 50 // 10 meters
         }
 
         private fun showNotification(title: String, content: String) {

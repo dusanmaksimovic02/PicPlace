@@ -54,11 +54,9 @@ class MainActivity : ComponentActivity() {
                                 requestLocationPermissions()
                                 if (areLocationPermissionsGranted()) {
                                     startLocationService()
-                                    startNearbyCheckService()
                                 }
                             } else {
                                 startLocationService()
-                                startNearbyCheckService()
                             }
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                                 if (ActivityCompat.checkSelfPermission(

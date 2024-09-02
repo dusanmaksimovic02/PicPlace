@@ -2,11 +2,10 @@ package com.example.picplace.ui.screens.map.viewplace
 
 import android.content.res.Configuration
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -16,7 +15,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -30,7 +28,6 @@ import androidx.compose.material.icons.automirrored.outlined.Send
 import androidx.compose.material.icons.outlined.Cancel
 import androidx.compose.material.icons.outlined.Favorite
 import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -40,9 +37,11 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -72,7 +71,6 @@ import com.example.picplace.models.user.MockUserViewModel
 import com.example.picplace.models.user.UserViewModel
 import com.example.picplace.ui.components.CustomTextField
 import com.example.picplace.ui.theme.PicPlaceTheme
-import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 import java.util.Date
 
@@ -86,17 +84,26 @@ fun ViewPlaceScreen(
 ) {
     val currentUser = userViewModel.userData.observeAsState()
     val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
     var user by remember {
         mutableStateOf<UserData?>(UserData())
     }
-//    var userLoaded by remember { mutableStateOf(true) }
+    val selectedOptions = remember {
+        mutableStateListOf<Int?>().apply {
+            if (place != null) {
+                addAll(List(place.poll.size) { null })
+            }
+        }
+    }
+    val isSubmitEnabled = remember {
+        derivedStateOf { selectedOptions.all { it != null } }
+    }
 
     LaunchedEffect(Unit) {
         if (!isPreviewMode) {
             coroutineScope.launch {
                 try {
                     user = userViewModel.fetchUser(place!!.userId)
-//                    userLoaded = user != UserData()
                 } catch (e: Exception) {
                     Log.e("ViewPlaceScreen", "Error fetching user data: ${e.message}")
                 }
@@ -112,20 +119,6 @@ fun ViewPlaceScreen(
             )
         }
     }
-
-//    if (!userLoaded) {
-//        Box(
-//            modifier = Modifier.fillMaxSize(),
-//            contentAlignment = Alignment.Center
-//        ) {
-//            CircularProgressIndicator(
-//                modifier = Modifier.width(64.dp),
-//                color = MaterialTheme.colorScheme.secondary,
-//                trackColor = MaterialTheme.colorScheme.surfaceVariant,
-//            )
-//        }
-//        return
-//    }
 
     var isLiked by remember {
         mutableStateOf(currentUser.value?.let { place?.likedBy?.contains(it.id) } == true)
@@ -353,8 +346,7 @@ fun ViewPlaceScreen(
 
             Row(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(10.dp),
+                    .fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
@@ -431,7 +423,7 @@ fun ViewPlaceScreen(
                                 .fillMaxWidth()
                                 .padding(10.dp)
                         ) {
-                            pollObjects.options.forEach { option ->
+                            pollObjects.options.forEachIndexed { optionIndex, option ->
                                 Row(
                                     modifier = modifier
                                         .fillMaxWidth()
@@ -439,8 +431,10 @@ fun ViewPlaceScreen(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     RadioButton(
-                                        selected = false,
-                                        onClick = {  }
+                                        selected =  selectedOptions[index] == optionIndex,
+                                        onClick = {
+                                            selectedOptions[index] = optionIndex
+                                        }
                                     )
                                     Text(
                                         text = option,
@@ -455,13 +449,27 @@ fun ViewPlaceScreen(
 
                 OutlinedButton(
                     onClick = {
-
+                        coroutineScope.launch {
+                            placeViewModel.submitPoll(
+                                placeId = place.id,
+                                userId = currentUser.value!!.id,
+                                pollResults = selectedOptions,
+                                onSuccess = {
+                                    Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+                                },
+                                onFailure = {
+                                    Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+                                },
+                                place = place
+                            )
+                        }
                     },
                     modifier = modifier
                         .padding(10.dp)
                         .fillMaxWidth(),
                     border = BorderStroke(2.dp, Color(0xFF425980)),
-                    shape = RoundedCornerShape(13.dp)
+                    shape = RoundedCornerShape(13.dp),
+                    enabled = isSubmitEnabled.value
                 ) {
                     Text(
                         text = "Submit poll",

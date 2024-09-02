@@ -5,6 +5,7 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -28,6 +29,7 @@ import androidx.compose.material.icons.outlined.QuestionMark
 import androidx.compose.material.icons.outlined.Title
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -74,6 +76,9 @@ fun AddPlaceScreen(
     location: LatLng,
     placeViewModel: PlaceViewModel
 ) {
+    var isLoading by remember {
+        mutableStateOf(false)
+    }
     var selectedImageUris by remember {
         mutableStateOf<List<Uri>>(emptyList())
     }
@@ -145,174 +150,151 @@ fun AddPlaceScreen(
     val context = LocalContext.current
 
     Scaffold { innerPadding ->
-        Column(
-            modifier = modifier
-                .padding(innerPadding)
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .pointerInput(Unit) {
-                    detectTapGestures(onTap = { focusManager.clearFocus() })
-                },
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "Add Place",
-                fontWeight = FontWeight.Bold,
-                fontSize = 25.sp,
-                color = Color(0xff425980)
-            )
-
-            CustomTextField(
-                value = placeName,
-                onValueChange = {
-                    placeName = it
-                },
-                label = "Place name",
-                isFocused = isPlaceFocused,
-                onFocusChange = {
-                    isPlaceFocused = it
-                },
-                imageVector = Icons.Outlined.Title
-            )
-
-            Text(
-                text = "Add photo/photos",
-                color = Color(0xff425980),
+        if (isLoading) {
+            Column (
                 modifier = modifier
-                    .fillMaxWidth()
-                    .padding(10.dp),
-                textAlign = TextAlign.Left
-            )
-
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(10.dp),
-                modifier = modifier
-                    .height(300.dp)
+                    .fillMaxSize()
+                    .background(Color.Transparent),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                items(selectedImageUris) { uri ->
-                    AsyncImage(
-                        model = uri,
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxWidth(),
-                        contentScale = ContentScale.Fit
-                    )
-                }
+                Text(text = "Adding place ...")
+                
+                CircularProgressIndicator(
+                    modifier = modifier
+                        .padding(16.dp)
+                        .background(Color.Transparent)
+                )
             }
-
-            OutlinedButton(
-                onClick = {
-                    multiplePhotoPickerLauncher.launch(
-                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                    )
-                },
+        } else {
+            Column(
                 modifier = modifier
-                    .padding(10.dp)
-                    .fillMaxWidth(),
-                shape = RoundedCornerShape(13.dp)
-            ) {
-                Text(text = "Add photos")
-            }
-
-            Text(
-                text = "Add description",
-                color = Color(0xff425980),
-                modifier = modifier
-                    .fillMaxWidth()
-                    .padding(10.dp),
-                textAlign = TextAlign.Left
-            )
-
-            CustomTextField(
-                value = description,
-                onValueChange = {
-                    description = it
-                },
-                label = "Description",
-                isFocused = isDescriptionFocused,
-                onFocusChange = {
-                    isDescriptionFocused = it
-                },
-                imageVector = Icons.Outlined.Description
-            )
-
-            Row(
-                modifier = modifier
-                    .fillMaxWidth()
-                    .padding(10.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(innerPadding)
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .pointerInput(Unit) {
+                        detectTapGestures(onTap = { focusManager.clearFocus() })
+                    },
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Do you want to add poll?",
+                    text = "Add Place",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 25.sp,
+                    color = Color(0xff425980)
+                )
+
+                CustomTextField(
+                    value = placeName,
+                    onValueChange = {
+                        placeName = it
+                    },
+                    label = "Place name",
+                    isFocused = isPlaceFocused,
+                    onFocusChange = {
+                        isPlaceFocused = it
+                    },
+                    imageVector = Icons.Outlined.Title
+                )
+
+                Text(
+                    text = "Add photo/photos",
                     color = Color(0xff425980),
                     modifier = modifier
-                        .weight(1f),
+                        .fillMaxWidth()
+                        .padding(10.dp),
                     textAlign = TextAlign.Left
                 )
 
-                Switch(
-                    checked = isAddPollChecked,
-                    onCheckedChange = {
-                        isAddPollChecked = it
-                    }
-                )
-            }
-
-            if (isAddPollChecked) {
-                Text(
-                    text = "Default questions",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp
-                )
-                defaultPoolQuestions.forEachIndexed { index, poll ->
-                    Column(
-                        modifier = modifier
-                            .fillMaxWidth()
-                            .padding(10.dp)
-                    ) {
-                        Row(
-                            modifier = modifier
-                                .fillMaxWidth()
-                        ) {
-                            Text(
-                                text = "${index + 1}. Question: ",
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xff425980)
-                            )
-                            Text(text = poll.question)
-                        }
-
-                        Row(
-                            modifier = modifier
-                                .fillMaxWidth()
-                        ) {
-                            Text(
-                                text = "     Options: ",
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xff425980)
-                            )
-                            Text(text = poll.options.toString())
-                        }
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(10.dp),
+                    modifier = modifier
+                        .height(300.dp)
+                ) {
+                    items(selectedImageUris) { uri ->
+                        AsyncImage(
+                            model = uri,
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxWidth(),
+                            contentScale = ContentScale.Fit
+                        )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                OutlinedButton(
+                    onClick = {
+                        multiplePhotoPickerLauncher.launch(
+                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                        )
+                    },
+                    modifier = modifier
+                        .padding(10.dp)
+                        .fillMaxWidth(),
+                    shape = RoundedCornerShape(13.dp)
+                ) {
+                    Text(text = "Add photos")
+                }
 
-                if (customPollQuestions.isNotEmpty()) {
+                Text(
+                    text = "Add description",
+                    color = Color(0xff425980),
+                    modifier = modifier
+                        .fillMaxWidth()
+                        .padding(10.dp),
+                    textAlign = TextAlign.Left
+                )
+
+                CustomTextField(
+                    value = description,
+                    onValueChange = {
+                        description = it
+                    },
+                    label = "Description",
+                    isFocused = isDescriptionFocused,
+                    onFocusChange = {
+                        isDescriptionFocused = it
+                    },
+                    imageVector = Icons.Outlined.Description
+                )
+
+                Row(
+                    modifier = modifier
+                        .fillMaxWidth()
+                        .padding(10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Text(
-                        text = "Custom questions",
+                        text = "Do you want to add poll?",
+                        color = Color(0xff425980),
+                        modifier = modifier
+                            .weight(1f),
+                        textAlign = TextAlign.Left
+                    )
+
+                    Switch(
+                        checked = isAddPollChecked,
+                        onCheckedChange = {
+                            isAddPollChecked = it
+                        }
+                    )
+                }
+
+                if (isAddPollChecked) {
+                    Text(
+                        text = "Default questions",
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp
                     )
-                    customPollQuestions.forEachIndexed { index, poll ->
+                    defaultPoolQuestions.forEachIndexed { index, poll ->
                         Column(
                             modifier = modifier
                                 .fillMaxWidth()
                                 .padding(10.dp)
                         ) {
                             Row(
-                                modifier = modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically
+                                modifier = modifier
+                                    .fillMaxWidth()
                             ) {
                                 Text(
                                     text = "${index + 1}. Question: ",
@@ -320,129 +302,179 @@ fun AddPlaceScreen(
                                     color = Color(0xff425980)
                                 )
                                 Text(text = poll.question)
-
-                                Spacer(modifier = Modifier.weight(1f))
-
-                                IconButton(
-                                    onClick = {
-                                        customPollQuestions =
-                                            customPollQuestions.toMutableList().apply {
-                                                removeAt(index)
-                                            }
-                                    },
-                                    modifier = Modifier.padding(start = 8.dp),
-                                    colors = IconButtonDefaults.iconButtonColors(
-                                        contentColor = MaterialTheme.colorScheme.onSurface
-                                    )
-                                ) {
-                                    Icon(imageVector = Icons.Outlined.Close, contentDescription = "")
-                                }
                             }
 
-                            Row(modifier = modifier.fillMaxWidth()) {
+                            Row(
+                                modifier = modifier
+                                    .fillMaxWidth()
+                            ) {
                                 Text(
                                     text = "     Options: ",
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xff425980)
                                 )
-                                Text(text = poll.options.joinToString(", "))
+                                Text(text = poll.options.toString())
                             }
                         }
                     }
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    if (customPollQuestions.isNotEmpty()) {
+                        Text(
+                            text = "Custom questions",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp
+                        )
+                        customPollQuestions.forEachIndexed { index, poll ->
+                            Column(
+                                modifier = modifier
+                                    .fillMaxWidth()
+                                    .padding(10.dp)
+                            ) {
+                                Row(
+                                    modifier = modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "${index + 1}. Question: ",
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xff425980)
+                                    )
+                                    Text(text = poll.question)
+
+                                    Spacer(modifier = Modifier.weight(1f))
+
+                                    IconButton(
+                                        onClick = {
+                                            customPollQuestions =
+                                                customPollQuestions.toMutableList().apply {
+                                                    removeAt(index)
+                                                }
+                                        },
+                                        modifier = Modifier.padding(start = 8.dp),
+                                        colors = IconButtonDefaults.iconButtonColors(
+                                            contentColor = MaterialTheme.colorScheme.onSurface
+                                        )
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Outlined.Close,
+                                            contentDescription = ""
+                                        )
+                                    }
+                                }
+
+                                Row(modifier = modifier.fillMaxWidth()) {
+                                    Text(
+                                        text = "     Options: ",
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xff425980)
+                                    )
+                                    Text(text = poll.options.joinToString(", "))
+                                }
+                            }
+                        }
+                    }
+
+                    Text(
+                        text = "Add your own question",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp
+                    )
+
+                    CustomTextField(
+                        value = newQuestion,
+                        onValueChange = {
+                            newQuestion = it
+                        },
+                        label = "Question",
+                        isFocused = isNewQuestionFocused,
+                        onFocusChange = {
+                            isNewQuestionFocused = it
+                        },
+                        type = KeyboardType.Text,
+                        imageVector = Icons.Outlined.QuestionMark,
+                        capitalization = KeyboardCapitalization.Words
+                    )
+
+                    CustomTextField(
+                        value = newOptions,
+                        onValueChange = {
+                            newOptions = it
+                        },
+                        label = "Options (comma separated)",
+                        isFocused = isNewOptionFocused,
+                        onFocusChange = {
+                            isNewOptionFocused = it
+                        },
+                        type = KeyboardType.Text,
+                        imageVector = Icons.AutoMirrored.Outlined.List,
+                        capitalization = KeyboardCapitalization.Words
+                    )
+
+                    Button(
+                        onClick = {
+                            if (newQuestion.isNotEmpty() && newOptions.isNotEmpty()) {
+                                customPollQuestions = customPollQuestions + PollObjects(
+                                    question = newQuestion,
+                                    options = newOptions.split(",").map { it.trim() }
+                                )
+                                newQuestion = ""
+                                newOptions = ""
+                            }
+                        },
+                        shape = RoundedCornerShape(13.dp),
+                        modifier = modifier.padding(10.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xff425980),
+                            contentColor = Color.White
+                        ),
+                        enabled = newQuestion.isNotEmpty() && newOptions.isNotEmpty()
+                    ) {
+                        Text(text = "Add Question")
+                    }
+                } else {
+                    Spacer(modifier = modifier.weight(1f))
                 }
-
-                Text(
-                    text = "Add your own question",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp
-                )
-
-                CustomTextField(
-                    value = newQuestion,
-                    onValueChange = {
-                        newQuestion = it
-                    },
-                    label = "Question",
-                    isFocused = isNewQuestionFocused,
-                    onFocusChange = {
-                        isNewQuestionFocused = it
-                    },
-                    type = KeyboardType.Text,
-                    imageVector = Icons.Outlined.QuestionMark,
-                    capitalization = KeyboardCapitalization.Words
-                )
-
-                CustomTextField(
-                    value = newOptions,
-                    onValueChange = {
-                        newOptions = it
-                    },
-                    label = "Options (comma separated)",
-                    isFocused = isNewOptionFocused,
-                    onFocusChange = {
-                        isNewOptionFocused = it
-                    },
-                    type = KeyboardType.Text,
-                    imageVector = Icons.AutoMirrored.Outlined.List,
-                    capitalization = KeyboardCapitalization.Words
-                )
 
                 Button(
                     onClick = {
-                        if (newQuestion.isNotEmpty() && newOptions.isNotEmpty()) {
-                            customPollQuestions = customPollQuestions + PollObjects(
-                                question = newQuestion,
-                                options = newOptions.split(",").map { it.trim() }
-                            )
-                            newQuestion = ""
-                            newOptions = ""
-                        }
+                        isLoading = true
+                        placeViewModel.addPlace(
+                            Place(
+                                name = placeName,
+                                description = description,
+                                imageUris = selectedImageUris,
+                                latLng = SerializableLatLng(location.latitude, location.longitude),
+                                poll = if (isAddPollChecked) {
+                                    defaultPoolQuestions + customPollQuestions
+                                } else {
+                                    emptyList()
+                                }
+                            ),
+                            onSuccess = { message ->
+                                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                                navController.navigate(Screens.Map.screen)
+                                isLoading = false
+                            },
+                            onFailure = { message ->
+                                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                                isLoading = false
+                            }
+                        )
                     },
                     shape = RoundedCornerShape(13.dp),
-                    modifier = modifier.padding(10.dp),
+                    enabled = selectedImageUris.isNotEmpty() && description.isNotEmpty() && placeName.isNotEmpty(),
+                    modifier = modifier
+                        .align(Alignment.End)
+                        .padding(10.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xff425980),
                         contentColor = Color.White
-                    ),
-                    enabled = newQuestion.isNotEmpty() && newOptions.isNotEmpty()
-                ) {
-                    Text(text = "Add Question")
-                }
-            } else {
-                Spacer(modifier = modifier.weight(1f))
-            }
-
-            Button(
-                onClick = {
-                    placeViewModel.addPlace(
-                        Place(
-                            name = placeName,
-                            description = description,
-                            imageUris = selectedImageUris,
-                            latLng = SerializableLatLng(location.latitude, location.longitude),
-                            poll = if(isAddPollChecked) {
-                                defaultPoolQuestions + customPollQuestions
-                            } else {
-                                emptyList()
-                            }
-                        ),
-                        onSuccess = { message ->
-                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-                            navController.navigate(Screens.Map.screen)
-                        },
-                        onFailure = { message ->
-                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-
-                        }
                     )
-                },
-                shape = RoundedCornerShape(13.dp),
-                enabled = selectedImageUris.isNotEmpty() && description.isNotEmpty() && placeName.isNotEmpty(),
-                modifier = modifier
-                    .align(Alignment.End)
-                    .padding(10.dp)
-            ) {
-                Text(text = "Add place")
+                ) {
+                    Text(text = "Add place")
+                }
             }
         }
     }

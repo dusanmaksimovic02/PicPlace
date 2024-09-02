@@ -2,6 +2,9 @@ package com.example.picplace.models.place
 
 import android.net.Uri
 import android.util.Log
+import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.example.picplace.models.auth.AuthViewModel.Companion.isPreviewMode
 import com.example.picplace.ui.screens.map.addplace.PollObjects
@@ -16,6 +19,9 @@ import java.util.UUID
 open class PlaceViewModel : ViewModel() {
     private var auth: FirebaseAuth? = null
     private var firestore: FirebaseFirestore? = null
+
+    private val _topPlaces = MutableLiveData<List<PlaceFirebase>>(emptyList())
+    val topPlaces: LiveData<List<PlaceFirebase>> = _topPlaces
 
     init {
         if (!isPreviewMode) {
@@ -109,6 +115,29 @@ open class PlaceViewModel : ViewModel() {
             }
     }
 
+    private fun fetchTop5Places() {
+        firestore?.collection("places")
+            ?.orderBy("likes", com.google.firebase.firestore.Query.Direction.DESCENDING)
+            ?.limit(5)
+            ?.addSnapshotListener { snapshot, exception ->
+                if (exception != null) {
+                    Log.e("FetchPlace", "Error while fetching users")
+                    return@addSnapshotListener
+                }
+
+                if (snapshot != null && !snapshot.isEmpty) {
+                    val placesList = snapshot.documents.mapNotNull { document ->
+                        document.toObject(PlaceFirebase::class.java)
+                    }
+                    _topPlaces.value = placesList
+                }
+            }
+    }
+
+    fun updateTopPlaces() {
+        fetchTop5Places()
+    }
+
     open fun getPlaces(
         onSuccess: (List<PlaceFirebase>) -> Unit,
         onFailure: (String) -> Unit,
@@ -126,8 +155,23 @@ open class PlaceViewModel : ViewModel() {
             }
     }
 
-    fun getPlacesForSpecificUser() {
-
+    fun getPlacesForSpecificUser(
+        id: String,
+        onSuccess: (List<PlaceFirebase>) -> Unit,
+        onFailure: (String) -> Unit
+    ) {
+        firestore?.collection("places")
+            ?.whereEqualTo("userId", id)
+            ?.get()
+            ?.addOnSuccessListener { querySnapshot ->
+                val places = querySnapshot.documents.mapNotNull { document ->
+                    document.toObject(PlaceFirebase::class.java)
+                }
+                onSuccess(places)
+            }
+            ?.addOnFailureListener { exception ->
+                onFailure("Failed to fetch places: ${exception.message}")
+            }
     }
 
     fun updatePlace() {
@@ -137,6 +181,36 @@ open class PlaceViewModel : ViewModel() {
     fun deletePlace() {
 
     }
+
+    suspend fun submitPoll(
+        placeId: String,
+        userId: String,
+        pollResults: SnapshotStateList<Int?>,
+        onSuccess: (String) -> Unit,
+        onFailure: (String) -> Unit,
+        place: PlaceFirebase?
+    ) {
+        val result = mutableMapOf<String, Int>()
+
+        pollResults.forEachIndexed { index, selectedIndex ->
+            result[place!!.poll[index].question] = selectedIndex!!
+        }
+
+        val pollResult = PollResult(userId, result)
+
+        firestore?.collection("places")
+            ?.document(placeId)
+            ?.update("pollResults", FieldValue.arrayUnion(pollResult))
+            ?.addOnSuccessListener {
+                onSuccess("Poll submitted successfully")
+            }
+            ?.addOnFailureListener { e ->
+                onFailure("Error while submitting poll")
+                Log.e("Submitting poll", e.toString())
+            }
+            ?.await()
+    }
+
 
     suspend fun likePlace(
         placeId: String,
@@ -275,6 +349,7 @@ data class PlaceFirebase(
     val poll: List<PollObjects> = emptyList(),
     val userId: String = "",
     val createdAt: Long = System.currentTimeMillis(),
+    val pollResults: List<PollResult> = emptyList()
 )
 
 data class Place(
@@ -303,3 +378,8 @@ data class SerializableLatLng(
         return LatLng(latitude, longitude)
     }
 }
+
+data class PollResult(
+    val userId: String = "",
+    val votes: Map<String, Int> = emptyMap()
+)

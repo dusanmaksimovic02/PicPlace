@@ -68,7 +68,8 @@ fun Navigation(
                 modifier = modifier,
                 navController = navController,
                 authViewModel = authViewModel,
-                userViewModel = userViewModel
+                userViewModel = userViewModel,
+                placeViewModel = placeViewModel
             )
         }
         composable(Screens.ForgotPassword.screen) {
@@ -100,7 +101,8 @@ fun Navigation(
                 modifier = modifier,
                 navController = navController,
                 authViewModel = authViewModel,
-                userViewModel = userViewModel
+                userViewModel = userViewModel,
+                placeViewModel = placeViewModel
             )
         }
         composable(Screens.EditUser.screen) {

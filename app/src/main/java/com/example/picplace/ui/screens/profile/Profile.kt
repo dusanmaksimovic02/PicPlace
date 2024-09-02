@@ -3,21 +3,27 @@ package com.example.picplace.ui.screens.profile
 import android.app.ActivityManager
 import android.content.Context
 import android.content.res.Configuration
+import android.net.Uri
 import android.os.Build
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.outlined.Check
@@ -53,9 +59,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalInspectionMode
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -68,6 +75,9 @@ import com.example.picplace.models.auth.AuthState
 import com.example.picplace.models.auth.AuthViewModel
 import com.example.picplace.models.auth.AuthViewModel.Companion.isPreviewMode
 import com.example.picplace.models.auth.MockAuthViewModel
+import com.example.picplace.models.place.MockPlaceViewModel
+import com.example.picplace.models.place.PlaceFirebase
+import com.example.picplace.models.place.PlaceViewModel
 import com.example.picplace.models.user.MockUserViewModel
 import com.example.picplace.models.user.UserViewModel
 import com.example.picplace.services.LocationTrackerService
@@ -75,6 +85,7 @@ import com.example.picplace.services.NearbyCheckService
 import com.example.picplace.ui.navigation.BottomNavigationBar
 import com.example.picplace.ui.navigation.Screens
 import com.example.picplace.ui.theme.PicPlaceTheme
+import com.google.gson.Gson
 import kotlinx.coroutines.launch
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -84,12 +95,16 @@ fun ProfileScreen(
     modifier: Modifier,
     navController: NavController,
     authViewModel: AuthViewModel,
-    userViewModel: UserViewModel
+    userViewModel: UserViewModel,
+    placeViewModel: PlaceViewModel
 ) {
     val authState = authViewModel.authState.observeAsState()
     val userData = userViewModel.userData.observeAsState()
     val coroutineScope = rememberCoroutineScope()
-
+    var userPlaces by remember {
+        mutableStateOf<List<PlaceFirebase>>(emptyList())
+    }
+    val gson = remember { Gson() }
     var showDeleteAccountDialog by remember {
         mutableStateOf(false)
     }
@@ -109,22 +124,26 @@ fun ProfileScreen(
         mutableStateOf(false)
     }
     var isLocationTrackerAllowed by remember {
-        mutableStateOf(if(isPreviewMode) {
-            true
-        } else {
-            isServiceRunning(context, LocationTrackerService::class.java)
-        })
+        mutableStateOf(
+            if (isPreviewMode) {
+                true
+            } else {
+                isServiceRunning(context, LocationTrackerService::class.java)
+            }
+        )
     }
     var isSendNotificationAllowed by remember {
-        mutableStateOf(if(isPreviewMode) {
-            true
-        } else {
-            isServiceRunning(context, NearbyCheckService::class.java)
-        })
+        mutableStateOf(
+            if (isPreviewMode) {
+                true
+            } else {
+                isServiceRunning(context, NearbyCheckService::class.java)
+            }
+        )
     }
 
     LaunchedEffect(authState.value) {
-        when(authState.value){
+        when (authState.value) {
             is AuthState.Unauthenticated -> navController.navigate(Screens.Login.screen)
             else -> Unit
         }
@@ -132,9 +151,19 @@ fun ProfileScreen(
 
     LaunchedEffect(Unit) {
         userViewModel.updateCurrentUser()
+        placeViewModel.getPlacesForSpecificUser(
+            id = userData.value!!.id,
+            onSuccess = {
+                userPlaces = it
+            },
+            onFailure = {
+                Toast.makeText(context, "Error while fetching user places", Toast.LENGTH_SHORT)
+                    .show()
+            }
+        )
     }
 
-    if(showBottomSheet) {
+    if (showBottomSheet) {
         ModalBottomSheet(
             sheetState = sheetState,
             onDismissRequest = {
@@ -188,7 +217,7 @@ fun ProfileScreen(
                     containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(3.dp)
                 ),
 
-            )
+                )
         },
         bottomBar = {
             BottomNavigationBar(
@@ -200,10 +229,11 @@ fun ProfileScreen(
         Column(
             modifier = modifier
                 .fillMaxSize()
-                .padding(innerPadding),
+                .padding(innerPadding)
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Row (
+            Row(
                 modifier = modifier
                     .fillMaxWidth()
                     .padding(10.dp),
@@ -231,7 +261,7 @@ fun ProfileScreen(
                     )
                 }
 
-                Column (
+                Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically),
                     modifier = modifier
@@ -276,7 +306,8 @@ fun ProfileScreen(
 
             OutlinedButton(
                 onClick = {
-                    navController.navigate(Screens.EditUser.screen) },
+                    navController.navigate(Screens.EditUser.screen)
+                },
                 modifier = modifier
                     .fillMaxWidth()
                     .padding(10.dp),
@@ -288,6 +319,7 @@ fun ProfileScreen(
                     color = Color(0xFF425980)
                 )
             }
+
             if (showDeleteAccountDialog) {
                 AlertDialog(
                     onDismissRequest = { showDeleteAccountDialog = false },
@@ -304,7 +336,8 @@ fun ProfileScreen(
                                                 "Account is deleted successfully",
                                                 Toast.LENGTH_SHORT
                                             ).show()
-                                            authViewModel.setUnauthenticatedState() },
+                                            authViewModel.setUnauthenticatedState()
+                                        },
                                         onFailure = {
                                             Toast.makeText(
                                                 context,
@@ -318,7 +351,8 @@ fun ProfileScreen(
                             }
                         ) {
                             Text("Delete", color = Color.Red)
-                        } },
+                        }
+                    },
                     dismissButton = {
                         TextButton(
                             onClick = {
@@ -336,8 +370,8 @@ fun ProfileScreen(
                     .fillMaxWidth()
                     .padding(10.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            )  {
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
                 Row(
                     modifier = modifier
                         .fillMaxWidth(),
@@ -384,7 +418,7 @@ fun ProfileScreen(
                         .fillMaxWidth(),
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
-                )  {
+                ) {
                     Text(
                         text = "Allow sending notification about nearby places",
                         color = Color(0xff425980),
@@ -419,9 +453,91 @@ fun ProfileScreen(
                 }
             }
 
+            Column(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .padding(10.dp)
+            ) {
+                userPlaces.forEach { place ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                val placeJson = Uri.encode(gson.toJson(place))
+
+                                navController.navigate("${Screens.ViewPlaceScreen.screen}/$placeJson")
+                            }
+                            .padding(vertical = 5.dp)
+                            .border(
+                                BorderStroke(2.dp, Color(0xff425980)),
+                                RoundedCornerShape(13.dp)
+                            ),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Card(
+                                shape = RoundedCornerShape(7.dp),
+                                modifier = Modifier
+                                    .size(90.dp)
+                                    .padding(10.dp)
+                            ) {
+                                AsyncImage(
+                                    model = ImageRequest.Builder(LocalContext.current)
+                                        .data(place.imageUrls[0])
+                                        .crossfade(true)
+                                        .build(),
+                                    contentDescription = "Profile Picture",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(7.dp))
+                                )
+                            }
+
+                            Column(
+                                modifier = modifier
+                                    .fillMaxWidth(),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Text(
+                                    text = place.name,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xff425980),
+                                    fontStyle = FontStyle.Italic,
+                                    fontSize = 20.sp
+                                )
+
+                                Text(
+                                    text = place.description,
+                                    color = Color(0xff425980)
+                                )
+
+                                Row {
+                                    Text(
+                                        text = "Likes: ${place.likes}",
+                                        color = Color(0xff425980)
+                                    )
+
+                                    Spacer(modifier = modifier.width(50.dp))
+
+                                    Text(
+                                        text = "Comments: ${place.comments.size}",
+                                        color = Color(0xff425980)
+                                    )                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
+
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Preview(
@@ -431,13 +547,14 @@ fun ProfileScreen(
 )
 @Composable
 fun ProfilePreview() {
-    AuthViewModel.isPreviewMode = true
+    isPreviewMode = true
     PicPlaceTheme {
         ProfileScreen(
             modifier = Modifier,
             navController = NavController(LocalContext.current),
             authViewModel = MockAuthViewModel(),
-            userViewModel = MockUserViewModel()
+            userViewModel = MockUserViewModel(),
+            placeViewModel = MockPlaceViewModel()
         )
     }
 }
