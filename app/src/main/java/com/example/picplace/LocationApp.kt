@@ -18,6 +18,14 @@ class LocationApp: Application() {
             )
             val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(channel)
+
+            val nearbyCheckChannel = NotificationChannel(
+                "nearbyCheck",
+                "Nearby Check",
+                NotificationManager.IMPORTANCE_LOW
+            )
+
+            notificationManager.createNotificationChannel(nearbyCheckChannel)
         }
     }
 }

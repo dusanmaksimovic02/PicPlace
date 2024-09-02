@@ -71,6 +71,7 @@ import com.example.picplace.models.auth.MockAuthViewModel
 import com.example.picplace.models.user.MockUserViewModel
 import com.example.picplace.models.user.UserViewModel
 import com.example.picplace.services.LocationTrackerService
+import com.example.picplace.services.NearbyCheckService
 import com.example.picplace.ui.navigation.BottomNavigationBar
 import com.example.picplace.ui.navigation.Screens
 import com.example.picplace.ui.theme.PicPlaceTheme
@@ -115,7 +116,11 @@ fun ProfileScreen(
         })
     }
     var isSendNotificationAllowed by remember {
-        mutableStateOf(false)
+        mutableStateOf(if(isPreviewMode) {
+            true
+        } else {
+            isServiceRunning(context, NearbyCheckService::class.java)
+        })
     }
 
     LaunchedEffect(authState.value) {
@@ -353,6 +358,7 @@ fun ProfileScreen(
                             if (isChecked) {
                                 (context as MainActivity).startLocationService()
                             } else {
+                                isSendNotificationAllowed = false
                                 (context as MainActivity).stopLocationService()
                             }
                         },
@@ -387,7 +393,14 @@ fun ProfileScreen(
                     )
                     Switch(
                         checked = isSendNotificationAllowed,
-                        onCheckedChange = { isSendNotificationAllowed = it },
+                        onCheckedChange = {
+                            isSendNotificationAllowed = it
+                            if (it) {
+                                (context as MainActivity).startNearbyCheckService()
+                            } else {
+                                (context as MainActivity).stopNearbyCheckService()
+                            }
+                        },
                         colors = SwitchDefaults.colors(
                             checkedTrackColor = Color(0xFF425980),
                         ),
@@ -457,7 +470,10 @@ fun BottomSheetContent(
 
 fun isServiceRunning(context: Context, serviceClass: Class<*>): Boolean {
     val manager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-    return manager.getRunningServices(Integer.MAX_VALUE).any {
-        it.service.className == serviceClass.name
+    for (service in manager.getRunningServices(Int.MAX_VALUE)) {
+        if (serviceClass.name == service.service.className) {
+            return true
+        }
     }
+    return false
 }

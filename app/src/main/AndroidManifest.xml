@@ -48,6 +48,10 @@
             android:name=".services.LocationTrackerService"
             android:foregroundServiceType="location">
         </service>
+        <service
+            android:name=".services.NearbyCheckService"
+            android:foregroundServiceType="location">
+        </service>
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="@string/fileprovider"

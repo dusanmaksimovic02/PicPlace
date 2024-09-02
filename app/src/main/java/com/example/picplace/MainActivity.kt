@@ -9,8 +9,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,6 +23,7 @@ import com.example.picplace.models.auth.AuthViewModel
 import com.example.picplace.models.place.PlaceViewModel
 import com.example.picplace.models.user.UserViewModel
 import com.example.picplace.services.LocationTrackerService
+import com.example.picplace.services.NearbyCheckService
 import com.example.picplace.ui.navigation.Navigation
 import com.example.picplace.ui.theme.PicPlaceTheme
 
@@ -53,9 +52,13 @@ class MainActivity : ComponentActivity() {
                         is AuthState.Authenticated -> {
                             if (!areLocationPermissionsGranted()) {
                                 requestLocationPermissions()
-                                if (areLocationPermissionsGranted()) startLocationService()
+                                if (areLocationPermissionsGranted()) {
+                                    startLocationService()
+                                    startNearbyCheckService()
+                                }
                             } else {
                                 startLocationService()
+                                startNearbyCheckService()
                             }
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                                 if (ActivityCompat.checkSelfPermission(
@@ -74,6 +77,7 @@ class MainActivity : ComponentActivity() {
                         }
                         is AuthState.Unauthenticated -> {
                             stopLocationService()
+                            stopNearbyCheckService()
                         }
                         else -> Unit
                     }
@@ -130,8 +134,24 @@ class MainActivity : ComponentActivity() {
     }
 
     internal fun stopLocationService() {
+        stopNearbyCheckService()
         Intent(applicationContext, LocationTrackerService::class.java).apply {
             action = LocationTrackerService.ACTION_STOP
+            startService(this)
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    internal fun startNearbyCheckService() {
+        Intent(applicationContext, NearbyCheckService::class.java).apply {
+            action = NearbyCheckService.ACTION_START
+            startService(this)
+        }
+    }
+
+    internal fun stopNearbyCheckService() {
+        Intent(applicationContext, NearbyCheckService::class.java).apply {
+            action = NearbyCheckService.ACTION_STOP
             startService(this)
         }
     }
