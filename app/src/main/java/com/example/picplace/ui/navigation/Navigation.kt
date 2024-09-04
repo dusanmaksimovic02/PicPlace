@@ -23,6 +23,7 @@ import com.example.picplace.ui.screens.login.LoginScreen
 import com.example.picplace.ui.screens.map.MapScreen
 import com.example.picplace.ui.screens.map.addplace.AddPlaceScreen
 import com.example.picplace.ui.screens.map.viewplace.ViewPlaceScreen
+import com.example.picplace.ui.screens.placestable.PlacesTableScreen
 import com.example.picplace.ui.screens.profile.ProfileScreen
 import com.example.picplace.ui.screens.profile.updateprofileimage.UpdateProfileImage
 import com.example.picplace.ui.screens.register.RegisterScreen
@@ -161,6 +162,13 @@ fun Navigation(
                 navController = navController,
                 userViewModel = userViewModel,
                 place = place,
+                placeViewModel = placeViewModel
+            )
+        }
+        composable(Screens.PlacesTable.screen) {
+            PlacesTableScreen(
+                modifier = modifier,
+                navController = navController,
                 placeViewModel = placeViewModel
             )
         }

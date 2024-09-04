@@ -222,7 +222,7 @@ fun ProfileScreen(
         bottomBar = {
             BottomNavigationBar(
                 navController = navController,
-                selectedIndex = 3
+                selectedIndex = 4
             )
         }
     ) { innerPadding ->

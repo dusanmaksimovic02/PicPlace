@@ -13,4 +13,5 @@ sealed class Screens(val screen: String) {
     data object FullImageScreen: Screens("fullImageScreen")
     data object AddPlaceScreen: Screens("addPlace")
     data object ViewPlaceScreen: Screens("viewPlace")
+    data object PlacesTable: Screens("placesTable")
 }

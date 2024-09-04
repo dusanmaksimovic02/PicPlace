@@ -4,17 +4,21 @@ import android.content.res.Configuration
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -26,7 +30,10 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.Comment
 import androidx.compose.material.icons.automirrored.outlined.Send
 import androidx.compose.material.icons.outlined.Cancel
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Favorite
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -98,12 +105,16 @@ fun ViewPlaceScreen(
     val isSubmitEnabled = remember {
         derivedStateOf { selectedOptions.all { it != null } }
     }
+    var isUserTakePoll by remember {
+        mutableStateOf(false)
+    }
 
     LaunchedEffect(Unit) {
         if (!isPreviewMode) {
             coroutineScope.launch {
                 try {
                     user = userViewModel.fetchUser(place!!.userId)
+                    isUserTakePoll = placeViewModel.isUserTakePoll(place.id, currentUser.value!!.id)
                 } catch (e: Exception) {
                     Log.e("ViewPlaceScreen", "Error fetching user data: ${e.message}")
                 }
@@ -148,16 +159,60 @@ fun ViewPlaceScreen(
                     detectTapGestures(onTap = { focusManager.clearFocus() })
                 }
         ) {
-            IconButton(
-                onClick = {
-                    navController.popBackStack()
-                }
+            Row (
+                modifier = modifier
+                    .fillMaxWidth()
+                    .padding(10.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
-                    tint = MaterialTheme.colorScheme.onSurface
-                )
+                IconButton(
+                    onClick = {
+                        navController.popBackStack()
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                if (place?.userId == currentUser.value?.id)
+                Button(
+                    onClick = {
+                        coroutineScope.launch {
+                            placeViewModel.deletePlace(
+                                placeId = place!!.id,
+                                onSuccess = {
+                                    Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+                                },
+                                onFailure = {
+                                    Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+                                }
+                            )
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.Transparent
+                    ),
+                    modifier = modifier.width(130.dp)
+                ) {
+                    Row (
+                        modifier = modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Delete place",
+                            color = Color.Red
+                        )
+
+                        Icon(
+                            imageVector = Icons.Outlined.Delete,
+                            contentDescription = "Delete place",
+                            tint = Color.Red
+                        )
+                    }
+                }
             }
 
             Row (
@@ -395,86 +450,159 @@ fun ViewPlaceScreen(
             }
 
             if (place.poll.isNotEmpty()) {
-                Text(
-                    text = "Take a poll",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                    modifier = modifier
-                        .fillMaxWidth()
-                        .padding(10.dp)
-                )
+                if (place.userId == currentUser.value?.id || isUserTakePoll) {
+                    Text(
+                        text = "Poll Results",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        modifier = modifier
+                            .fillMaxWidth()
+                            .padding(10.dp)
+                    )
 
-                Column(
-                    modifier = modifier
-                        .fillMaxWidth()
-                        .padding(10.dp)
-                ) {
-                    place.poll.forEachIndexed { index, pollObjects ->
-                        Text(
-                            text = "${index + 1}. ${pollObjects.question}",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 18.sp,
-                            color = Color(0xff425980)
-                        )
+                    Column(
+                        modifier = modifier
+                            .fillMaxWidth()
+                            .padding(10.dp)
+                    ) {
+                        place.pollStatistics.forEach { stat ->
+                            Text(
+                                text = stat.question,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp,
+                                color = Color(0xff425980)
+                            )
 
-                        Column (
-                            modifier = modifier
-                                .fillMaxWidth()
-                                .padding(10.dp)
-                        ) {
-                            pollObjects.options.forEachIndexed { optionIndex, option ->
+                            stat.votesCount.forEach { (option, count) ->
+                                val totalVotes = stat.votesCount.values.sum()
+                                val percentage = if (totalVotes > 0) (count * 100f / totalVotes) else 0f
+
                                 Row(
-                                    modifier = modifier
+                                    modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(vertical = 4.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Start
                                 ) {
-                                    RadioButton(
-                                        selected =  selectedOptions[index] == optionIndex,
-                                        onClick = {
-                                            selectedOptions[index] = optionIndex
-                                        }
-                                    )
                                     Text(
                                         text = option,
-                                        modifier = Modifier.padding(start = 8.dp),
+                                        modifier = Modifier.weight(1f),
                                         fontSize = 16.sp,
+                                    )
+
+                                    Box(
+                                        modifier = Modifier
+                                            .weight(2f)
+                                            .height(20.dp)
+                                            .clip(RoundedCornerShape(10.dp))
+                                            .background(Color.LightGray)
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxHeight()
+                                                .fillMaxWidth(percentage / 100f)
+                                                .background(Color(0xff425980))
+                                        )
+                                    }
+
+                                    Text(
+                                        text = "${percentage.toInt()}%",
+                                        modifier = Modifier
+                                            .padding(start = 8.dp)
+                                            .width(35.dp),
+                                        fontSize = 16.sp,
+                                        textAlign = TextAlign.Center
                                     )
                                 }
                             }
                         }
                     }
-                }
-
-                OutlinedButton(
-                    onClick = {
-                        coroutineScope.launch {
-                            placeViewModel.submitPoll(
-                                placeId = place.id,
-                                userId = currentUser.value!!.id,
-                                pollResults = selectedOptions,
-                                onSuccess = {
-                                    Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
-                                },
-                                onFailure = {
-                                    Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
-                                },
-                                place = place
-                            )
-                        }
-                    },
-                    modifier = modifier
-                        .padding(10.dp)
-                        .fillMaxWidth(),
-                    border = BorderStroke(2.dp, Color(0xFF425980)),
-                    shape = RoundedCornerShape(13.dp),
-                    enabled = isSubmitEnabled.value
-                ) {
+                } else {
                     Text(
-                        text = "Submit poll",
-                        color = Color(0xFF425980)
+                        text = "Take a poll",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        modifier = modifier
+                            .fillMaxWidth()
+                            .padding(10.dp)
                     )
+
+                    Column(
+                        modifier = modifier
+                            .fillMaxWidth()
+                            .padding(10.dp)
+                    ) {
+                        place.poll.forEachIndexed { index, pollObjects ->
+                            Text(
+                                text = "${index + 1}. ${pollObjects.question}",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp,
+                                color = Color(0xff425980)
+                            )
+
+                            Column(
+                                modifier = modifier
+                                    .fillMaxWidth()
+                                    .padding(10.dp)
+                            ) {
+                                pollObjects.options.forEachIndexed { optionIndex, option ->
+                                    Row(
+                                        modifier = modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 4.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        RadioButton(
+                                            selected = selectedOptions[index] == optionIndex,
+                                            onClick = {
+                                                selectedOptions[index] = optionIndex
+                                            }
+                                        )
+                                        Text(
+                                            text = option,
+                                            modifier = Modifier.padding(start = 8.dp),
+                                            fontSize = 16.sp,
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    OutlinedButton(
+                        onClick = {
+                            coroutineScope.launch {
+                                placeViewModel.submitPoll(
+                                    placeId = place.id,
+                                    userId = currentUser.value!!.id,
+                                    pollResults = selectedOptions,
+                                    onSuccess = {
+                                        Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+                                        coroutineScope.launch {
+                                            placeViewModel.updatePollStatistics(placeId = place.id)
+                                        }
+                                    },
+                                    onFailure = {
+                                        Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+                                    },
+                                    place = place
+                                )
+                            }
+                        },
+                        modifier = modifier
+                            .padding(10.dp)
+                            .fillMaxWidth(),
+                        border = BorderStroke(2.dp, Color(0xFF425980)),
+                        shape = RoundedCornerShape(13.dp),
+                        enabled = isSubmitEnabled.value
+                    ) {
+                        Text(
+                            text = "Submit poll",
+                            color = Color(0xFF425980)
+                        )
+                    }
                 }
             }
         }

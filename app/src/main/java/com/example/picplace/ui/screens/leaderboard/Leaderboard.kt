@@ -111,7 +111,7 @@ fun LeaderboardScreen(
         bottomBar = {
             BottomNavigationBar(
                 navController = navController,
-                selectedIndex = 2
+                selectedIndex = 3
             )
         }
     ) { innerPadding ->

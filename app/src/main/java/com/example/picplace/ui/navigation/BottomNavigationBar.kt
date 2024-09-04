@@ -6,10 +6,12 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Leaderboard
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.TableRows
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Leaderboard
 import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.TableRows
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -44,6 +46,12 @@ fun BottomNavigationBar(
             title = "Map",
             selectedIcon = Icons.Filled.Map,
             unselectedIcon = Icons.Outlined.Map,
+        ),
+        BottomNavigationItem(
+            route = Screens.PlacesTable.screen,
+            title = "Places Table",
+            selectedIcon = Icons.Filled.TableRows,
+            unselectedIcon = Icons.Outlined.TableRows,
         ),
         BottomNavigationItem(
             route = Screens.Leaderboard.screen,
