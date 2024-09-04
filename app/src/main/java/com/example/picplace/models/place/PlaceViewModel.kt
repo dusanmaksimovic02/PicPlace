@@ -16,8 +16,12 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.tasks.await
 import java.util.UUID
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlin.coroutines.suspendCoroutine
 
 open class PlaceViewModel : ViewModel() {
     private var auth: FirebaseAuth? = null
@@ -35,6 +39,7 @@ open class PlaceViewModel : ViewModel() {
 
     open fun addPlace(
         place: Place,
+        userName: String,
         onSuccess: (String) -> Unit,
         onFailure: (String) -> Unit,
     ) {
@@ -46,7 +51,7 @@ open class PlaceViewModel : ViewModel() {
             }
 
             if (place.imageUris.isEmpty()) {
-                addPlaceToFirebase(place, user.uid, onSuccess, onFailure)
+                addPlaceToFirebase(place, user.uid, userName, onSuccess, onFailure)
                 return
             }
 
@@ -72,7 +77,7 @@ open class PlaceViewModel : ViewModel() {
                         if (imageUrls.size == place.imageUris.size) {
                             val placeFirebase =
                                 place.copy(imageUris = imageUrls.map { Uri.parse(it) })
-                            addPlaceToFirebase(placeFirebase, user.uid, onSuccess, onFailure)
+                            addPlaceToFirebase(placeFirebase, user.uid, userName, onSuccess, onFailure)
                         }
                     } else {
                         onFailure("Failed to upload image: ${task.exception?.message}")
@@ -87,6 +92,7 @@ open class PlaceViewModel : ViewModel() {
     private fun addPlaceToFirebase(
         place: Place,
         userId: String,
+        userName: String,
         onSuccess: (String) -> Unit,
         onFailure: (String) -> Unit,
     ) {
@@ -98,7 +104,8 @@ open class PlaceViewModel : ViewModel() {
                 latLng = place.latLng,
                 poll = place.poll,
                 userId = userId,
-                createdAt = place.createdAt
+                createdAt = place.createdAt,
+                userName = userName
             )
 
             firestore?.collection("places")
@@ -177,6 +184,26 @@ open class PlaceViewModel : ViewModel() {
         }
     }
 
+    open suspend fun getPlaces2(): List<PlaceFirebase> {
+        return suspendCoroutine { continuation ->
+            try {
+                firestore?.collection("places")
+                    ?.get()
+                    ?.addOnSuccessListener { querySnapshot ->
+                        val places = querySnapshot.documents.mapNotNull { document ->
+                            document.toObject(PlaceFirebase::class.java)
+                        }
+                        continuation.resume(places) // Resume coroutine with the result
+                    }
+                    ?.addOnFailureListener { exception ->
+                        continuation.resumeWithException(exception) // Resume coroutine with an exception
+                    }
+            } catch (e: Exception) {
+                continuation.resumeWithException(e) // Resume coroutine with an exception
+            }
+        }
+    }
+
     suspend fun getFilteredPlaces(
         username: String? = null,
         name: String? = null,
@@ -188,14 +215,10 @@ open class PlaceViewModel : ViewModel() {
         onFailure: (String) -> Unit
     ) {
         try {
-            var filteredPlaces: List<PlaceFirebase?> = emptyList()
 
-            getPlaces(
-                onSuccess = { places ->
-                    filteredPlaces = places
-                },
-                onFailure = {}
-            )
+            val places = getPlaces2()
+
+            var filteredPlaces: List<PlaceFirebase?> = places
 
             if (username != null) {
                 filteredPlaces = filteredPlaces.filter { it?.userName == username }

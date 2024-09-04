@@ -173,10 +173,10 @@ fun MapScreen(
         ))
     }
     var usernameFilter by remember {
-        mutableStateOf("")
+        mutableStateOf<String?>("")
     }
     var nameFilter by remember {
-        mutableStateOf("")
+        mutableStateOf<String?>("")
     }
     var startDateFilter by remember {
         mutableStateOf<Long?>(null)
@@ -270,7 +270,7 @@ fun MapScreen(
                 Spacer(modifier = modifier.weight(0.5f))
                 
                 CustomTextField(
-                    value = usernameFilter,
+                    value = if (usernameFilter != null) usernameFilter!! else "",
                     onValueChange = {
                         usernameFilter = it
                     },
@@ -283,7 +283,7 @@ fun MapScreen(
                 )
 
                 CustomTextField(
-                    value = nameFilter,
+                    value = if (nameFilter != null) nameFilter!! else "",
                     onValueChange = {
                         nameFilter = it
                     },
@@ -346,8 +346,8 @@ fun MapScreen(
                     onClick = {
                         coroutineScope.launch {
                             placeViewModel.getFilteredPlaces(
-                                username = usernameFilter.ifBlank { null },
-                                name = nameFilter.ifBlank { null },
+                                username = usernameFilter?.ifBlank { null },
+                                name = nameFilter?.ifBlank { null },
                                 startDate = startDateFilter,
                                 endDate = endDateFilter,
                                 radius = radiusFilter,
@@ -371,7 +371,7 @@ fun MapScreen(
                         contentColor = Color.White
                     ),
                     shape = RoundedCornerShape(13.dp),
-                    enabled = usernameFilter.isNotEmpty() || nameFilter.isNotEmpty() || radiusFilter != null || (startDateFilter != null && endDateFilter != null)
+                    enabled = !usernameFilter.isNullOrEmpty() || !nameFilter.isNullOrEmpty() || radiusFilter != null || (startDateFilter != null && endDateFilter != null)
                 ) {
                     Text("Apply Filters")
                 }
@@ -444,12 +444,21 @@ fun MapScreen(
                     ) {
                         IconButton(
                             onClick = {
-                                usernameFilter = ""
-                                nameFilter = ""
+                                usernameFilter = null
+                                nameFilter = null
                                 startDateFilter = null
                                 endDateFilter = null
                                 radiusFilter = null
-                                placesToShow = places
+                                coroutineScope.launch {
+                                    placeViewModel.getPlaces(
+                                        onSuccess = { fetchedPlaces ->
+                                            placesToShow = fetchedPlaces
+                                        },
+                                        onFailure = { errorMessage ->
+                                            Log.e("MapScreen", "Error fetching places: $errorMessage")
+                                        }
+                                    )
+                                }
                                 isFiltered = false
                             },
                             modifier = modifier
@@ -474,7 +483,8 @@ fun MapScreen(
                     shape = RoundedCornerShape(13.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color.White
-                    )
+                    ),
+                    enabled = isLocationServiceRunning
                 ) {
                     Text(
                         text = "Add Place",

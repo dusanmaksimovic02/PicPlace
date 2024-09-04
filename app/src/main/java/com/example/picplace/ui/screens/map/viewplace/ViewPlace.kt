@@ -466,9 +466,9 @@ fun ViewPlaceScreen(
                             .fillMaxWidth()
                             .padding(10.dp)
                     ) {
-                        place.pollStatistics.forEach { stat ->
+                        place.pollStatistics.forEachIndexed() { index, stat ->
                             Text(
-                                text = stat.question,
+                                text = "${index + 1}. ${stat.question}",
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 18.sp,
                                 color = Color(0xff425980)
@@ -583,6 +583,7 @@ fun ViewPlaceScreen(
                                         coroutineScope.launch {
                                             placeViewModel.updatePollStatistics(placeId = place.id)
                                         }
+                                        isUserTakePoll = true
                                     },
                                     onFailure = {
                                         Toast.makeText(context, it, Toast.LENGTH_SHORT).show()

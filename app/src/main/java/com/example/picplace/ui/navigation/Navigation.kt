@@ -143,7 +143,8 @@ fun Navigation(
                 modifier = modifier,
                 placeViewModel = placeViewModel,
                 navController = navController,
-                location = location
+                location = location,
+                userViewModel = userViewModel
             )
         }
         composable(

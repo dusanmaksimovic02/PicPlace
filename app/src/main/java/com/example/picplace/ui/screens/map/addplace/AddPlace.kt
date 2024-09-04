@@ -40,6 +40,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -64,6 +65,8 @@ import com.example.picplace.models.place.MockPlaceViewModel
 import com.example.picplace.models.place.Place
 import com.example.picplace.models.place.PlaceViewModel
 import com.example.picplace.models.place.SerializableLatLng
+import com.example.picplace.models.user.MockUserViewModel
+import com.example.picplace.models.user.UserViewModel
 import com.example.picplace.ui.components.CustomTextField
 import com.example.picplace.ui.navigation.Screens
 import com.example.picplace.ui.theme.PicPlaceTheme
@@ -74,7 +77,8 @@ fun AddPlaceScreen(
     modifier: Modifier,
     navController: NavController,
     location: LatLng,
-    placeViewModel: PlaceViewModel
+    placeViewModel: PlaceViewModel,
+    userViewModel: UserViewModel
 ) {
     var isLoading by remember {
         mutableStateOf(false)
@@ -148,6 +152,7 @@ fun AddPlaceScreen(
     }
     val focusManager = LocalFocusManager.current
     val context = LocalContext.current
+    val currentUser = userViewModel.userData.observeAsState()
 
     Scaffold { innerPadding ->
         if (isLoading) {
@@ -452,6 +457,7 @@ fun AddPlaceScreen(
                                     emptyList()
                                 }
                             ),
+                            userName = currentUser.value!!.username,
                             onSuccess = { message ->
                                 Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
                                 navController.navigate(Screens.Map.screen)
@@ -491,7 +497,8 @@ fun AddPlacePreview() {
             modifier = Modifier,
             placeViewModel = MockPlaceViewModel(),
             navController = rememberNavController(),
-            location = LatLng(0.0, 0.0)
+            location = LatLng(0.0, 0.0),
+            userViewModel = MockUserViewModel()
         )
     }
 }

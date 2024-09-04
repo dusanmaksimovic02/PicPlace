@@ -4,6 +4,7 @@ class MockPlaceViewModel : PlaceViewModel() {
 
     override fun addPlace(
         place: Place,
+        userName: String,
         onSuccess: (String) -> Unit,
         onFailure: (String) -> Unit
     ) {
